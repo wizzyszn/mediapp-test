@@ -21,6 +21,7 @@ import {
 } from "@/config/service/doctor.service";
 import { getDoctorVideoSessionReq } from "@/config/service/video-consultation.service";
 import { VideoCall } from "@/shared/components/video-call.component";
+import { getApiErrorMessage } from "@/lib/utils";
 
 // "locked"   → patient route, doctor is NOT assigned (full page locked/blank)
 // "addendum" → patient route, doctor IS assigned (only addendum section editable)
@@ -73,6 +74,10 @@ function ConsultationSpace() {
     enabled: Boolean(appointmentId) && shouldJoinVideo && isVideoConsultation,
     retry: 1,
   });
+  const videoErrorMessage = getApiErrorMessage(
+    videoSessionQuery.error,
+    "Unable to load the video session.",
+  );
 
   const consultationMode: ConsultationMode = (() => {
     if (!isAssignedDoctor && isCompleted) {
@@ -122,7 +127,10 @@ function ConsultationSpace() {
                 side="left"
                 className="p-0 sm:max-w-md w-full overflow-y-auto"
               >
-                <PatientDataSidebar patient={consultationDetails?.user_id} />
+                <PatientDataSidebar
+                  patient={consultationDetails?.user_id}
+                  consultationId={consultationId}
+                />
               </SheetContent>
             </Sheet>
             <ConsultationOrdersDrawer consultationId={consultationId} />
@@ -132,7 +140,10 @@ function ConsultationSpace() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-2 items-start flex-1 min-h-0">
         <div className="hidden lg:block col-span-1 sticky top-0 h-full overflow-y-auto">
-          <PatientDataSidebar patient={consultationDetails?.user_id} />
+          <PatientDataSidebar
+            patient={consultationDetails?.user_id}
+            consultationId={consultationId}
+          />
         </div>
 
         <div className="col-span-1 lg:col-span-3 h-full min-h-0 flex flex-col gap-2">
@@ -153,6 +164,7 @@ function ConsultationSpace() {
                 videoSessionQuery.isError ||
                 (!videoSessionQuery.isLoading && !videoSessionQuery.data?.data)
               }
+              errorMessage={videoErrorMessage}
               onRetry={() => void videoSessionQuery.refetch()}
             />
           )}

@@ -11,6 +11,7 @@ import {
   Home,
   UserRound,
   MoveLeft,
+  RefreshCw,
   // CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ import {
   isScheduledTimeError,
   extractScheduledTimeFromError,
   formatScheduledTimeMessage,
+  getApiErrorMessage,
 } from "@/lib/utils";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.bubble.css";
@@ -50,6 +52,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/config/stores/store";
 import { AppointmentStatusBadge } from "../components/appointment-status-badge.component.doctor";
 import type { AppointmentStatus } from "../types/consultation.types";
+import { AppointmentDetailSkeleton } from "@/shared/components/appointment-detail-skeleton.component.shared";
 
 // ─── Consultation type config ───────────────────────────────────────────────
 
@@ -254,7 +257,9 @@ function DoctorAppointmentDetails() {
           `This appointment starts at ${timeMessage}. Please join at the scheduled time.`,
         );
       } else {
-        toast.error(error.message || "Failed to start video session.");
+        toast.error(
+          getApiErrorMessage(error, "Failed to start video session."),
+        );
       }
     },
   });
@@ -262,15 +267,7 @@ function DoctorAppointmentDetails() {
   // ─── Loading / Error states ─────────────────────────────────────────
 
   if (isLoading) {
-    return (
-      <div className="p-4 md:p-6">
-        <div className="mb-4 md:mb-6 h-8 md:h-12 w-2/3 md:w-1/3 bg-muted animate-pulse rounded-lg" />
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 md:gap-6">
-          <div className="bg-card rounded-[20px] border border-border p-4 md:p-6 h-[400px] animate-pulse" />
-          <div className="h-[250px] bg-card rounded-xl border border-border animate-pulse" />
-        </div>
-      </div>
-    );
+    return <AppointmentDetailSkeleton />;
   }
 
   if (isError || !data?.data) {
@@ -343,6 +340,9 @@ function DoctorAppointmentDetails() {
 
   const canReschedule =
     !isTerminal && !isRescheduled && rescheduleDate && rescheduleTime;
+  const rescheduleHistory = [...(appointment.rescheduled_history ?? [])].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
 
   return (
     <div className="p-4 md:p-6">
@@ -500,7 +500,7 @@ function DoctorAppointmentDetails() {
           </div>
 
           {/* Instructions */}
-          <div>
+          <div className={rescheduleHistory.length > 0 ? "mb-6" : ""}>
             <div className="flex items-center gap-2 mb-3">
               <Info className="w-4 h-4 shrink-0" color="#6C6C6C" />
               <span className="text-sm font-semibold text-foreground">
@@ -519,6 +519,124 @@ function DoctorAppointmentDetails() {
               ))}
             </ul>
           </div>
+
+          {rescheduleHistory.length > 0 && (
+            <div className="border-t border-border pt-5 md:pt-6">
+              <div className="flex items-center gap-2 mb-4">
+                <RefreshCw className="w-4 h-4" color="#6C6C6C" />
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Reschedule History
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {rescheduleHistory.length} previous{" "}
+                    {rescheduleHistory.length === 1 ? "slot" : "slots"} in this
+                    appointment thread
+                  </p>
+                </div>
+              </div>
+
+              <div className="ml-0 md:ml-6">
+                {rescheduleHistory.map((history, index) => {
+                  const historyDate = formatZonedDate(
+                    history.scheduled_start_at_utc,
+                    {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    },
+                    undefined,
+                    userTimezone,
+                  );
+                  const historyTime = formatZonedTimeRange(
+                    history.scheduled_start_at_utc,
+                    history.scheduled_end_at_utc,
+                    { timeZone: userTimezone },
+                  );
+                  const changedAt = formatZonedDate(
+                    history.updatedAt || history.createdAt,
+                    {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    },
+                    undefined,
+                    userTimezone,
+                  );
+                  const isLast = index === rescheduleHistory.length - 1;
+
+                  return (
+                    <article key={history._id} className="relative flex gap-3">
+                      <div className="flex w-8 shrink-0 flex-col items-center">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#DDD6FE] bg-[#EDE9FE] text-[#7C3AED]">
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        </span>
+                        {!isLast && <span className="w-px flex-1 bg-border" />}
+                      </div>
+
+                      <div className="min-w-0 flex-1 pb-5">
+                        <div className="rounded-xl border border-border bg-background p-3 md:p-4">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-foreground">
+                                Appointment was rescheduled
+                              </p>
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                Previous ref: {history.appointment_number}
+                              </p>
+                            </div>
+                            <AppointmentStatusBadge
+                              status={history.status as AppointmentStatus}
+                            />
+                          </div>
+
+                          <div className="mt-3 flex flex-col gap-2 text-sm text-foreground sm:flex-row sm:items-center sm:gap-5">
+                            <span className="inline-flex min-w-0 items-center gap-2">
+                              <Calendar className="h-4 w-4 shrink-0 text-[#6C6C6C]" />
+                              <span className="truncate">{historyDate}</span>
+                            </span>
+                            <span className="inline-flex min-w-0 items-center gap-2">
+                              <Clock className="h-4 w-4 shrink-0 text-[#6C6C6C]" />
+                              <span className="truncate">{historyTime}</span>
+                            </span>
+                          </div>
+
+                          {(history.reason_for_visit ||
+                            history.cancelled_reason) && (
+                            <div className="mt-3 space-y-1 border-l-2 border-[#DDD6FE] pl-3 text-xs">
+                              {history.reason_for_visit && (
+                                <p className="text-muted-foreground">
+                                  Reason:{" "}
+                                  <span className="text-foreground">
+                                    {history.reason_for_visit}
+                                  </span>
+                                </p>
+                              )}
+                              {history.cancelled_reason && (
+                                <p className="text-muted-foreground">
+                                  Note:{" "}
+                                  <span className="text-foreground">
+                                    {history.cancelled_reason}
+                                  </span>
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          <p className="mt-3 text-xs text-muted-foreground">
+                            Updated {changedAt}
+                            {history.cancelled_by
+                              ? ` by ${history.cancelled_by}`
+                              : ""}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Actions panel */}

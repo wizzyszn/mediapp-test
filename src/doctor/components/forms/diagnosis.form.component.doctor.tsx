@@ -42,18 +42,11 @@ export function DiagnosisForm({
     retry: false,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-40 bg-white rounded-lg border border-[#E5E7EB]">
-        <Loader2 className="w-6 h-6 animate-spin text-[#5164E8]" />
-      </div>
-    );
-  }
-
   return (
     <DiagnosisInner
       consultationId={consultationId}
       existingData={data?.data}
+      isLoading={isLoading}
       mode={mode}
       onCancel={onCancel}
       onSave={onSave}
@@ -66,6 +59,7 @@ export function DiagnosisForm({
 function DiagnosisInner({
   consultationId,
   existingData,
+  isLoading,
   mode,
   onCancel,
   onSave,
@@ -73,6 +67,7 @@ function DiagnosisInner({
 }: {
   consultationId?: string;
   existingData?: Partial<DiagnosisData>;
+  isLoading: boolean;
   mode: ConsultationMode;
   onCancel: () => void;
   onSave: () => void;
@@ -87,7 +82,7 @@ function DiagnosisInner({
 
   // Draft is read once inside lazy initialisers — not at render time —
   // to avoid the side-effect-during-render bug in the original other branch.
-  const readDraft = (): Partial<{
+  const readDraft = useCallback((): Partial<{
     provisionalPills: string[];
     provisionalSearch: string;
     provisionalText: string;
@@ -104,7 +99,7 @@ function DiagnosisInner({
       console.error("Failed to parse draft from localStorage", e);
       return null;
     }
-  };
+  }, [draftKey, isEditable]);
 
   const [provisionalPills, setProvisionalPills] = useState<string[]>(() => {
     const d = readDraft();
@@ -160,6 +155,51 @@ function DiagnosisInner({
 
   const provisionalContainerRef = useRef<HTMLDivElement>(null);
   const finalContainerRef = useRef<HTMLDivElement>(null);
+  const hydratedConsultationRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    const hydrationKey = consultationId ?? "new";
+    if (isLoading || hydratedConsultationRef.current === hydrationKey) return;
+
+    const d = readDraft();
+    const nextProvisional =
+      d?.provisionalPills ??
+      d?.provisionalSearch ??
+      existingData?.provisional_diagnosis?.[0] ??
+      "";
+    const nextFinal =
+      d?.finalPills ??
+      d?.finalSearch ??
+      existingData?.final_diagnosis?.[0] ??
+      "";
+
+    setProvisionalPills(
+      Array.isArray(nextProvisional)
+        ? nextProvisional
+        : nextProvisional
+          ? nextProvisional
+              .split(",")
+              .map((s: string) => s.trim())
+              .filter(Boolean)
+          : [],
+    );
+    setProvisionalText(
+      d?.provisionalText ?? existingData?.provisional_diagnosis?.[1] ?? "",
+    );
+    setFinalPills(
+      Array.isArray(nextFinal)
+        ? nextFinal
+        : nextFinal
+          ? nextFinal
+              .split(",")
+              .map((s: string) => s.trim())
+              .filter(Boolean)
+          : [],
+    );
+    setFinalText(d?.finalText ?? existingData?.final_diagnosis?.[1] ?? "");
+    setRecordId(existingData?._id);
+    hydratedConsultationRef.current = hydrationKey;
+  }, [consultationId, existingData, isLoading, readDraft]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -243,7 +283,7 @@ function DiagnosisInner({
     ) => updateDiagnosisForConsultationReq(recordId || consultationId!, data),
   });
 
-  const isPending = isCreating || isUpdating;
+  const isPending = isLoading || isCreating || isUpdating;
 
   const handleSaveSubmit = useCallback(
     async (
@@ -356,7 +396,10 @@ function DiagnosisInner({
   });
 
   // Diagnosis fields are read-only in both locked and addendum modes
-  const fieldsDisabled = isLocked || isAddendumOnly;
+  const fieldsDisabled = isLoading || isLocked || isAddendumOnly;
+  const loadingFieldClass = isLoading
+    ? "animate-pulse !border-[#B8C3F5] !bg-[#EEF2FF] text-transparent placeholder:text-transparent"
+    : "";
 
   return (
     <div className="bg-white rounded-lg p-4 sm:p-6 space-y-5 shadow-sm border border-[#E5E7EB]">
@@ -376,7 +419,7 @@ function DiagnosisInner({
               </Label>
 
               <div
-                className={`flex flex-wrap items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-md border border-[#D1D5DB] bg-white transition-colors focus-within:ring-2 focus-within:ring-[#5164E8]/50 focus-within:border-[#5164E8] cursor-text shadow-sm ${fieldsDisabled ? "bg-[#F3F4F6] opacity-60 cursor-not-allowed" : ""}`}
+                className={`flex flex-wrap items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-md border border-[#D1D5DB] bg-white transition-colors focus-within:ring-2 focus-within:ring-[#5164E8]/50 focus-within:border-[#5164E8] cursor-text shadow-sm ${fieldsDisabled ? "bg-[#F3F4F6] opacity-60 cursor-not-allowed" : ""} ${isLoading ? "animate-pulse" : ""}`}
                 onClick={() => {
                   if (!fieldsDisabled) {
                     document.getElementById("provisional-input")?.focus();
@@ -384,62 +427,68 @@ function DiagnosisInner({
                   }
                 }}
               >
-                {provisionalPills.map((pill) => (
-                  <span
-                    key={pill}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#5164E8]/10 text-[#5164E8] border border-[#5164E8]/20"
-                  >
-                    {pill}
-                    {!fieldsDisabled && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const next = provisionalPills.filter(
-                            (p) => p !== pill,
-                          );
+                {isLoading ? (
+                  <span className="h-4 w-40 rounded-md bg-[#C7D2FE]" />
+                ) : (
+                  <>
+                    {provisionalPills.map((pill) => (
+                      <span
+                        key={pill}
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#5164E8]/10 text-[#5164E8] border border-[#5164E8]/20"
+                      >
+                        {pill}
+                        {!fieldsDisabled && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const next = provisionalPills.filter(
+                                (p) => p !== pill,
+                              );
+                              setProvisionalPills(next);
+                              updateDraft({ provisionalPills: next });
+                            }}
+                            className="inline-flex items-center justify-center rounded-full size-4 hover:bg-[#5164E8]/20 transition-colors"
+                          >
+                            <X size={10} />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                    <input
+                      id="provisional-input"
+                      type="text"
+                      className="flex-1 min-w-[120px] text-xs bg-transparent outline-none placeholder:text-[#9CA3AF]"
+                      placeholder={
+                        provisionalPills.length === 0
+                          ? "Type to search ICD-10 codes..."
+                          : ""
+                      }
+                      value={provisionalInputValue}
+                      disabled={fieldsDisabled}
+                      onChange={(e) => {
+                        if (!isEditable) return;
+                        setProvisionalInputValue(e.target.value);
+                        setShowProvisionalDropdown(true);
+                      }}
+                      onFocus={() => {
+                        if (!fieldsDisabled) setShowProvisionalDropdown(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (
+                          e.key === "Backspace" &&
+                          provisionalInputValue === "" &&
+                          provisionalPills.length > 0
+                        ) {
+                          e.preventDefault();
+                          const next = provisionalPills.slice(0, -1);
                           setProvisionalPills(next);
                           updateDraft({ provisionalPills: next });
-                        }}
-                        className="inline-flex items-center justify-center rounded-full size-4 hover:bg-[#5164E8]/20 transition-colors"
-                      >
-                        <X size={10} />
-                      </button>
-                    )}
-                  </span>
-                ))}
-                <input
-                  id="provisional-input"
-                  type="text"
-                  className="flex-1 min-w-[120px] text-xs bg-transparent outline-none placeholder:text-[#9CA3AF]"
-                  placeholder={
-                    provisionalPills.length === 0
-                      ? "Type to search ICD-10 codes..."
-                      : ""
-                  }
-                  value={provisionalInputValue}
-                  disabled={fieldsDisabled}
-                  onChange={(e) => {
-                    if (!isEditable) return;
-                    setProvisionalInputValue(e.target.value);
-                    setShowProvisionalDropdown(true);
-                  }}
-                  onFocus={() => {
-                    if (!fieldsDisabled) setShowProvisionalDropdown(true);
-                  }}
-                  onKeyDown={(e) => {
-                    if (
-                      e.key === "Backspace" &&
-                      provisionalInputValue === "" &&
-                      provisionalPills.length > 0
-                    ) {
-                      e.preventDefault();
-                      const next = provisionalPills.slice(0, -1);
-                      setProvisionalPills(next);
-                      updateDraft({ provisionalPills: next });
-                    }
-                  }}
-                />
+                        }
+                      }}
+                    />
+                  </>
+                )}
               </div>
 
               {/* Dropdown gated on !fieldsDisabled — unified between branches */}
@@ -485,7 +534,7 @@ function DiagnosisInner({
                   setProvisionalText(e.target.value);
                   updateDraft({ provisionalText: e.target.value });
                 }}
-                className="min-h-[100px] !text-xs"
+                className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
                 placeholder="Enter provisional diagnosis details..."
                 disabled={fieldsDisabled}
               />
@@ -503,7 +552,7 @@ function DiagnosisInner({
               </Label>
 
               <div
-                className={`flex flex-wrap items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-md border border-[#D1D5DB] bg-white transition-colors focus-within:ring-2 focus-within:ring-[#5164E8]/50 focus-within:border-[#5164E8] cursor-text shadow-sm ${fieldsDisabled ? "bg-[#F3F4F6] opacity-60 cursor-not-allowed" : ""}`}
+                className={`flex flex-wrap items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-md border border-[#D1D5DB] bg-white transition-colors focus-within:ring-2 focus-within:ring-[#5164E8]/50 focus-within:border-[#5164E8] cursor-text shadow-sm ${fieldsDisabled ? "bg-[#F3F4F6] opacity-60 cursor-not-allowed" : ""} ${isLoading ? "animate-pulse" : ""}`}
                 onClick={() => {
                   if (!fieldsDisabled) {
                     document.getElementById("final-input")?.focus();
@@ -511,60 +560,66 @@ function DiagnosisInner({
                   }
                 }}
               >
-                {finalPills.map((pill) => (
-                  <span
-                    key={pill}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#5164E8]/10 text-[#5164E8] border border-[#5164E8]/20"
-                  >
-                    {pill}
-                    {!fieldsDisabled && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const next = finalPills.filter((p) => p !== pill);
+                {isLoading ? (
+                  <span className="h-4 w-40 rounded-md bg-[#C7D2FE]" />
+                ) : (
+                  <>
+                    {finalPills.map((pill) => (
+                      <span
+                        key={pill}
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#5164E8]/10 text-[#5164E8] border border-[#5164E8]/20"
+                      >
+                        {pill}
+                        {!fieldsDisabled && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const next = finalPills.filter((p) => p !== pill);
+                              setFinalPills(next);
+                              updateDraft({ finalPills: next });
+                            }}
+                            className="inline-flex items-center justify-center rounded-full size-4 hover:bg-[#5164E8]/20 transition-colors"
+                          >
+                            <X size={10} />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                    <input
+                      id="final-input"
+                      type="text"
+                      className="flex-1 min-w-[120px] text-xs bg-transparent outline-none placeholder:text-[#9CA3AF]"
+                      placeholder={
+                        finalPills.length === 0
+                          ? "Type to search ICD-10 codes..."
+                          : ""
+                      }
+                      value={finalInputValue}
+                      disabled={fieldsDisabled}
+                      onChange={(e) => {
+                        if (!isEditable) return;
+                        setFinalInputValue(e.target.value);
+                        setShowFinalDropdown(true);
+                      }}
+                      onFocus={() => {
+                        if (!fieldsDisabled) setShowFinalDropdown(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (
+                          e.key === "Backspace" &&
+                          finalInputValue === "" &&
+                          finalPills.length > 0
+                        ) {
+                          e.preventDefault();
+                          const next = finalPills.slice(0, -1);
                           setFinalPills(next);
                           updateDraft({ finalPills: next });
-                        }}
-                        className="inline-flex items-center justify-center rounded-full size-4 hover:bg-[#5164E8]/20 transition-colors"
-                      >
-                        <X size={10} />
-                      </button>
-                    )}
-                  </span>
-                ))}
-                <input
-                  id="final-input"
-                  type="text"
-                  className="flex-1 min-w-[120px] text-xs bg-transparent outline-none placeholder:text-[#9CA3AF]"
-                  placeholder={
-                    finalPills.length === 0
-                      ? "Type to search ICD-10 codes..."
-                      : ""
-                  }
-                  value={finalInputValue}
-                  disabled={fieldsDisabled}
-                  onChange={(e) => {
-                    if (!isEditable) return;
-                    setFinalInputValue(e.target.value);
-                    setShowFinalDropdown(true);
-                  }}
-                  onFocus={() => {
-                    if (!fieldsDisabled) setShowFinalDropdown(true);
-                  }}
-                  onKeyDown={(e) => {
-                    if (
-                      e.key === "Backspace" &&
-                      finalInputValue === "" &&
-                      finalPills.length > 0
-                    ) {
-                      e.preventDefault();
-                      const next = finalPills.slice(0, -1);
-                      setFinalPills(next);
-                      updateDraft({ finalPills: next });
-                    }
-                  }}
-                />
+                        }
+                      }}
+                    />
+                  </>
+                )}
               </div>
 
               {!fieldsDisabled &&
@@ -607,7 +662,7 @@ function DiagnosisInner({
                   setFinalText(e.target.value);
                   updateDraft({ finalText: e.target.value });
                 }}
-                className="min-h-[100px] !text-xs"
+                className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
                 placeholder="Enter final diagnosis details..."
                 disabled={fieldsDisabled}
               />

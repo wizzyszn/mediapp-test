@@ -27,6 +27,7 @@ import { generateConsultationInvestigationPdf } from "@/patient/components/consu
 import { generateConsultationMedicationPdf } from "@/patient/components/consultation-details/generate-consultation-medication-pdf.patient";
 import { useSelector } from "react-redux";
 import { RootState } from "@/config/stores/store";
+import { PatientConsultationDetailSkeleton } from "@/shared/components/patient-record-skeletons.component.shared";
 
 function ViewConsultationDetails() {
   const navigate = useNavigate();
@@ -84,15 +85,7 @@ function ViewConsultationDetails() {
   });
 
   if (isLoading) {
-    return (
-      <div className="p-4 md:p-6">
-        <div className="mb-6 h-12 w-2/3 md:w-1/3 bg-muted animate-pulse rounded-lg" />
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 md:gap-6">
-          <div className="bg-card rounded-[20px] border border-border p-4 md:p-6 h-[400px] animate-pulse" />
-          <div className="h-[250px] bg-card rounded-xl border border-border animate-pulse" />
-        </div>
-      </div>
-    );
+    return <PatientConsultationDetailSkeleton />;
   }
 
   if (isError || !data?.data) {
@@ -112,12 +105,19 @@ function ViewConsultationDetails() {
   );
   const endDate =
     consultation.appointment_id?.scheduled_end_at_utc || consultation.createdAt;
-  const displayDate = formatZonedDate(startDate, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }, undefined, userTimezone);
-  const displayTime = formatZonedTimeRange(startDate, endDate, { timeZone: userTimezone });
+  const displayDate = formatZonedDate(
+    startDate,
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    },
+    undefined,
+    userTimezone,
+  );
+  const displayTime = formatZonedTimeRange(startDate, endDate, {
+    timeZone: userTimezone,
+  });
 
   const consultationType = (consultation.type as ConsultationType) || "VIDEO";
   const config = CONSULTATION_CONFIG[consultationType];

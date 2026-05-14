@@ -1,11 +1,18 @@
-import { User, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+import {
+  User,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  Check,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { differenceInYears, format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import {
   getPatientConsultationHistoryreq,
   getPatientMedicationHistoryreq,
-  getPatientMedicationDiagnosisreq,
+  getInvestigationListForConsultationReq,
 } from "@/config/service/doctor.service";
 
 // interface ReferralRecord {
@@ -36,9 +43,13 @@ interface PatientSidebarProps {
     allergies?: string[];
     previous_medical_conditions?: string[];
   };
+  consultationId?: string;
 }
 
-export function PatientDataSidebar({ patient }: PatientSidebarProps) {
+export function PatientDataSidebar({
+  patient,
+  consultationId,
+}: PatientSidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>(
     "consultations",
   );
@@ -59,15 +70,16 @@ export function PatientDataSidebar({ patient }: PatientSidebarProps) {
     enabled: !!patientId,
   });
 
-  const { data: diagnosesData, isLoading: diagnosesLoading } = useQuery({
-    queryKey: ["patient-diagnosis-history", patientId],
-    queryFn: () => getPatientMedicationDiagnosisreq(patientId),
-    enabled: !!patientId,
-  });
+  const { data: investigationsData, isLoading: investigationsLoading } =
+    useQuery({
+      queryKey: ["consultation-investigations", consultationId],
+      queryFn: () => getInvestigationListForConsultationReq(consultationId!),
+      enabled: !!consultationId,
+    });
 
   const consultations = consultationsData?.data ?? [];
   const medications = medicationsData?.data ?? [];
-  const diagnoses = diagnosesData?.data ?? [];
+  const investigations = investigationsData?.data ?? [];
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -249,47 +261,55 @@ export function PatientDataSidebar({ patient }: PatientSidebarProps) {
             )}
           </div>
 
-          {/* Diagnoses */}
+          {/* Investigations */}
           <div className="bg-[#F9FAFB] rounded-lg overflow-hidden border border-[#E5E7EB]">
             <button
-              onClick={() => toggleSection("diagnoses")}
+              onClick={() => toggleSection("investigations")}
               className="w-full flex items-center justify-between p-4 hover:bg-[#F3F4F6] transition-colors"
             >
-              <span className="text-[#1F2937] font-semibold">Diagnoses</span>
-              {expandedSection === "diagnoses" ? (
+              <span className="text-[#1F2937] font-semibold">
+                Investigations
+              </span>
+              {expandedSection === "investigations" ? (
                 <ChevronDown className="w-5 h-5 text-[#6B7280]" />
               ) : (
                 <ChevronRight className="w-5 h-5 text-[#6B7280]" />
               )}
             </button>
-            {expandedSection === "diagnoses" && (
+            {expandedSection === "investigations" && (
               <div className="p-4 pt-0">
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="text-[#6B7280] border-b border-[#E5E7EB]">
-                        <th className="text-left py-2 px-1">Date</th>
-                        <th className="text-left py-2 px-1">Title</th>
-                        <th className="text-left py-2 px-1">Status</th>
+                        <th className="text-left py-2 px-1">Name</th>
+                        <th className="text-left py-2 px-1">Assigned</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {diagnosesLoading ? (
-                        <LoadingRow colSpan={3} />
-                      ) : diagnoses.length === 0 ? (
-                        <EmptyRow colSpan={3} label="diagnoses" />
+                      {investigationsLoading ? (
+                        <LoadingRow colSpan={2} />
+                      ) : investigations.length === 0 ? (
+                        <EmptyRow colSpan={2} label="investigations" />
                       ) : (
-                        diagnoses.map((diag) => (
+                        investigations.map((inv) => (
                           <tr
-                            key={diag._id}
+                            key={inv._id}
                             className="text-[#374151] hover:bg-[#F3F4F6] cursor-pointer transition-colors"
                           >
-                            <td className="py-2 px-1">
-                              {format(new Date(diag.createdAt), "yyyy-MM-dd")}
+                            <td className="py-2 px-1 font-medium">
+                              {inv.name}
                             </td>
-                            <td className="py-2 px-1">{diag.title}</td>
-                            <td className="py-2 px-1 capitalize">
-                              {diag.status}
+                            <td className="py-2 px-1">
+                              {inv.assign_to_patient ? (
+                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600">
+                                  <Check className="w-3.5 h-3.5" />
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-500">
+                                  <X className="w-3.5 h-3.5" />
+                                </span>
+                              )}
                             </td>
                           </tr>
                         ))

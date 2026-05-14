@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -46,18 +46,11 @@ export function InvestigationResultsForm({
     retry: false,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-40 bg-white rounded-lg border border-[#E5E7EB]">
-        <Loader2 className="w-6 h-6 animate-spin text-[#5164E8]" />
-      </div>
-    );
-  }
-
   return (
     <InvestigationResultsInner
       consultationId={consultationId}
       existingData={data?.data}
+      isLoading={isLoading}
       mode={mode}
       onCancel={onCancel}
       onSave={onSave}
@@ -70,6 +63,7 @@ export function InvestigationResultsForm({
 function InvestigationResultsInner({
   consultationId,
   existingData,
+  isLoading,
   mode,
   onCancel,
   onSave,
@@ -77,6 +71,7 @@ function InvestigationResultsInner({
 }: {
   consultationId?: string;
   existingData?: Partial<InvestigationData>;
+  isLoading: boolean;
   mode: ConsultationMode;
   onCancel: () => void;
   onSave: () => void;
@@ -116,6 +111,37 @@ function InvestigationResultsInner({
   const [isContinuePending, setIsContinuePending] = useState(false);
 
   const queryClient = useQueryClient();
+  const hydratedConsultationRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    const hydrationKey = consultationId ?? "new";
+    if (isLoading || hydratedConsultationRef.current === hydrationKey) return;
+
+    if (isEditable) {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        try {
+          setFormData(JSON.parse(saved));
+          setRecordId(existingData?._id);
+          hydratedConsultationRef.current = hydrationKey;
+          return;
+        } catch (e) {
+          console.error("Failed to parse draft from localStorage", e);
+        }
+      }
+    }
+
+    setFormData({
+      blood_test: existingData?.blood_test ?? "",
+      microbiology: existingData?.microbiology ?? "",
+      radiology: existingData?.radiology ?? "",
+      cardiovascular: existingData?.cardiovascular ?? "",
+      procedures: existingData?.procedures ?? "",
+      others: existingData?.others ?? "",
+    });
+    setRecordId(existingData?._id);
+    hydratedConsultationRef.current = hydrationKey;
+  }, [consultationId, draftKey, existingData, isEditable, isLoading]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!isEditable) return;
@@ -138,7 +164,7 @@ function InvestigationResultsInner({
     ) => updateInvestigationForConsultationReq(data, recordId!),
   });
 
-  const isPending = isCreating || isUpdating;
+  const isPending = isLoading || isCreating || isUpdating;
 
   const handleSaveSubmit = useCallback(
     async (
@@ -234,7 +260,10 @@ function InvestigationResultsInner({
   });
 
   // Investigation fields are read-only in both locked and addendum modes
-  const fieldsDisabled = isLocked || isAddendumOnly;
+  const fieldsDisabled = isLoading || isLocked || isAddendumOnly;
+  const loadingFieldClass = isLoading
+    ? "animate-pulse !border-[#B8C3F5] !bg-[#EEF2FF] text-transparent placeholder:text-transparent"
+    : "";
 
   return (
     <div className="bg-white rounded-lg p-4 sm:p-6 space-y-5 shadow-sm border border-[#E5E7EB]">
@@ -250,7 +279,7 @@ function InvestigationResultsInner({
             name="blood_test"
             value={formData.blood_test}
             onChange={handleChange}
-            className="min-h-[140px] font-mono !text-xs"
+            className={`min-h-[140px] font-mono !text-xs ${loadingFieldClass}`}
             placeholder={`Complete Blood Count:\nHb: 12.5 g/dL (normal)\nWBC: 7.2 x10^9/L (normal)...`}
             disabled={fieldsDisabled}
           />
@@ -262,7 +291,7 @@ function InvestigationResultsInner({
             name="microbiology"
             value={formData.microbiology}
             onChange={handleChange}
-            className="min-h-[140px] !text-xs"
+            className={`min-h-[140px] !text-xs ${loadingFieldClass}`}
             placeholder="Enter microbiology results..."
             disabled={fieldsDisabled}
           />
@@ -274,7 +303,7 @@ function InvestigationResultsInner({
             name="radiology"
             value={formData.radiology}
             onChange={handleChange}
-            className="min-h-[140px] !text-xs"
+            className={`min-h-[140px] !text-xs ${loadingFieldClass}`}
             placeholder={`Chest X-ray (AP view):\n- Normal heart size and shape...`}
             disabled={fieldsDisabled}
           />
@@ -286,7 +315,7 @@ function InvestigationResultsInner({
             name="cardiovascular"
             value={formData.cardiovascular}
             onChange={handleChange}
-            className="min-h-[140px] !text-xs"
+            className={`min-h-[140px] !text-xs ${loadingFieldClass}`}
             placeholder={`ECG:\n- Sinus rhythm...`}
             disabled={fieldsDisabled}
           />
@@ -298,7 +327,7 @@ function InvestigationResultsInner({
             name="procedures"
             value={formData.procedures}
             onChange={handleChange}
-            className="min-h-[140px] !text-xs"
+            className={`min-h-[140px] !text-xs ${loadingFieldClass}`}
             placeholder="Enter procedure results..."
             disabled={fieldsDisabled}
           />
@@ -310,7 +339,7 @@ function InvestigationResultsInner({
             name="others"
             value={formData.others}
             onChange={handleChange}
-            className="min-h-[140px] !text-xs"
+            className={`min-h-[140px] !text-xs ${loadingFieldClass}`}
             placeholder="Any additional investigation results..."
             disabled={fieldsDisabled}
           />

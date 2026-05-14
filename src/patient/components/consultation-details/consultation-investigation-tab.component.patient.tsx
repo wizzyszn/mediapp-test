@@ -1,7 +1,8 @@
-import { Loader2, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConsultationInvestigationUploadItem } from "./consultation-investigation-upload-item.component.patient";
 import type { InvestigationItem } from "./consultation-detail.types.patient";
+import { PatientRecordGroupSkeleton } from "@/shared/components/patient-record-skeletons.component.shared";
 
 interface InvestigationSummary {
   investigation_count?: number;
@@ -28,8 +29,8 @@ export function ConsultationInvestigationTab({
 }: ConsultationInvestigationTabProps) {
   if (isLoading) {
     return (
-      <div className="py-8 flex justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      <div className="space-y-3">
+        <PatientRecordGroupSkeleton count={2} />
       </div>
     );
   }

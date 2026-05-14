@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { Loader2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useQuery } from "@tanstack/react-query";
@@ -14,6 +13,7 @@ import {
   ReferralGroup,
   ReferralItem,
 } from "@/patient/components/referral/referral.types.patient";
+import { PatientRecordGroupSkeleton } from "@/shared/components/patient-record-skeletons.component.shared";
 
 interface jsPDFWithAutoTable extends jsPDF {
   lastAutoTable: {
@@ -30,10 +30,7 @@ export default function ReferralsPage() {
     queryFn: () => getGroupedReferralsForConsultationsReq(),
   });
 
-  const groups = useMemo(
-    () => (data?.data || []) as ReferralGroup[],
-    [data],
-  );
+  const groups = useMemo(() => (data?.data || []) as ReferralGroup[], [data]);
 
   const filteredGroups = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -77,8 +74,7 @@ export default function ReferralsPage() {
     try {
       const doc = new jsPDF();
 
-      const consultationTitle =
-        group.consultation?.title || "Consultation";
+      const consultationTitle = group.consultation?.title || "Consultation";
 
       doc.setFontSize(22);
       doc.setTextColor(99, 102, 241);
@@ -87,33 +83,21 @@ export default function ReferralsPage() {
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text(`Consultation: ${consultationTitle}`, 14, 30);
-      doc.text(
-        `Reference: ${group.consultation?._id || "N/A"}`,
-        14,
-        35,
-      );
+      doc.text(`Reference: ${group.consultation?._id || "N/A"}`, 14, 35);
       doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 40);
 
-      const tableBody = (group.referrals || []).map(
-        (ref: ReferralItem) => [
-          ref.specialist_name,
-          ref.hospital,
-          ref.doctor_id?.full_name || "N/A",
-          ref.referral_details,
-          new Date(ref.createdAt).toLocaleDateString(),
-        ],
-      );
+      const tableBody = (group.referrals || []).map((ref: ReferralItem) => [
+        ref.specialist_name,
+        ref.hospital,
+        ref.doctor_id?.full_name || "N/A",
+        ref.referral_details,
+        new Date(ref.createdAt).toLocaleDateString(),
+      ]);
 
       autoTable(doc, {
         startY: 50,
         head: [
-          [
-            "Specialist",
-            "Hospital",
-            "Referring Doctor",
-            "Details",
-            "Date",
-          ],
+          ["Specialist", "Hospital", "Referring Doctor", "Details", "Date"],
         ],
         body: tableBody,
         theme: "striped",
@@ -157,12 +141,7 @@ export default function ReferralsPage() {
 
           <div className="flex flex-col gap-2">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-2">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-[#6C6C6C]">
-                  Loading referrals...
-                </p>
-              </div>
+              <PatientRecordGroupSkeleton count={4} />
             ) : isError ? (
               <div className="text-center py-12 text-red-500">
                 Failed to load referral history. Please try again later.

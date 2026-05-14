@@ -1,10 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import {
-  CalendarDays,
-  ChevronUp,
-  Download,
-  Eye,
-} from "lucide-react";
+import { CalendarDays, ChevronUp, Download, Eye } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import SendIcon from "@/shared/components/svgs/icons/send.icon";
@@ -19,9 +14,7 @@ function ReferralRow({ referral }: { referral: ReferralItem }) {
   return (
     <div
       className="flex flex-col gap-3 rounded-lg border border-[#F0F0F0] bg-white p-3 shadow-sm cursor-pointer transition-colors hover:bg-[#FAFAFA]"
-      onClick={() =>
-        navigate(`/patient/dashboard/referrals/${referral._id}`)
-      }
+      onClick={() => navigate(`/patient/dashboard/referrals/${referral._id}`)}
     >
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex w-full min-w-0 flex-col sm:flex-1">
@@ -77,11 +70,9 @@ export function ReferralGroupCard({
   onToggle: (groupId: string) => void;
   onDownload: (group: ReferralGroup) => void;
 }) {
-  const consultationId =
-    group.consultation?._id || `unknown-${index}`;
+  const consultationId = group.consultation?._id || `unknown-${index}`;
 
-  const consultationTitle =
-    group.consultation?.title || "Consultation";
+  const consultationTitle = group.consultation?.title || "Consultation";
 
   const consultationDate = group.consultation?.createdAt
     ? new Date(group.consultation.createdAt).toLocaleDateString("en-US", {
@@ -125,8 +116,7 @@ export function ReferralGroupCard({
               </span>
               <span className="hidden text-[#B0B0B0] sm:inline">•</span>
               <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-primary">
-                {referralCount}{" "}
-                {referralCount === 1 ? "referral" : "referrals"}
+                {referralCount} {referralCount === 1 ? "referral" : "referrals"}
               </span>
             </div>
           </div>
@@ -143,10 +133,7 @@ export function ReferralGroupCard({
             className="h-8 w-8 rounded-[8px] border border-[#F0F0F0] bg-white p-0 text-[#2B2B2B] hover:bg-[#F7F7F7] sm:h-10 sm:w-10"
             title="Download PDF"
           >
-            <Download
-              className="h-3.5 w-3.5 sm:h-4 sm:w-4"
-              strokeWidth={1.8}
-            />
+            <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={1.8} />
           </Button>
 
           <Button
@@ -169,15 +156,13 @@ export function ReferralGroupCard({
         </div>
       </article>
 
-      {isExpanded &&
-        group.referrals &&
-        group.referrals.length > 0 && (
-          <div className="mb-2 ml-4 mr-4 flex flex-col gap-2 border-l-2 border-primary/20 py-2 pl-4">
-            {group.referrals.map((referral) => (
-              <ReferralRow key={referral._id} referral={referral} />
-            ))}
-          </div>
-        )}
+      {isExpanded && group.referrals && group.referrals.length > 0 && (
+        <div className="mb-2 ml-4 mr-4 flex flex-col gap-2 border-l-2 border-primary/20 py-2 pl-4">
+          {group.referrals.map((referral) => (
+            <ReferralRow key={referral._id} referral={referral} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -123,49 +123,106 @@ export function getZonedAppointmentDateTime(
 
 // ─── Video session error handling ──────────────────────────────────────────
 
+function getErrorData(error: unknown): Record<string, unknown> | null {
+  if (!error || typeof error !== "object") return null;
+
+  const errorRecord = error as Record<string, unknown>;
+  const response = errorRecord.response;
+
+  if (response && typeof response === "object" && "data" in response) {
+    const data = (response as Record<string, unknown>).data;
+    if (data && typeof data === "object") {
+      return data as Record<string, unknown>;
+    }
+  }
+
+  if ("data" in errorRecord && typeof errorRecord.data === "object") {
+    return errorRecord.data as Record<string, unknown>;
+  }
+
+  return null;
+}
+
+function extractScheduledTimeFromMessage(message: string): Date | null {
+  const match = message.match(
+    /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z?)/,
+  );
+
+  if (!match?.[1]) return null;
+
+  const scheduledTime = new Date(match[1]);
+  return isNaN(scheduledTime.getTime()) ? null : scheduledTime;
+}
+
+function formatVideoScheduledTimeError(message: string, code?: string) {
+  const scheduledTime = extractScheduledTimeFromMessage(message);
+  const isScheduledTimeErrorMessage =
+    code === "006" || message.toLowerCase().includes("scheduled time");
+
+  if (!isScheduledTimeErrorMessage || !scheduledTime) {
+    return null;
+  }
+
+  return `Video session can only be started at ${formatScheduledTimeMessage(scheduledTime)}. Please join at the scheduled time.`;
+}
+
+function getRawApiErrorMessage(error: unknown): {
+  message: string;
+  code?: string;
+} {
+  const data = getErrorData(error);
+  const responseDescription = data?.response_description;
+  const responseMessage = data?.message;
+  const responseCode = data?.response_code as string | undefined;
+
+  if (typeof responseMessage === "string" && responseMessage.trim()) {
+    return { message: responseMessage, code: responseCode };
+  }
+
+  if (typeof responseDescription === "string" && responseDescription.trim()) {
+    return { message: responseDescription, code: responseCode };
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return {
+      message: error.message.replace(/,\s*status:\s*\d+$/i, ""),
+      code: responseCode,
+    };
+  }
+
+  if (typeof error === "string" && error.trim()) {
+    return { message: error, code: responseCode };
+  }
+
+  return { message: "", code: responseCode };
+}
+
+export function getApiErrorMessage(
+  error: unknown,
+  fallback = "Something went wrong. Please try again.",
+): string {
+  const { message, code } = getRawApiErrorMessage(error);
+
+  if (message) {
+    return formatVideoScheduledTimeError(message, code) || message;
+  }
+
+  return fallback;
+}
+
 export function isScheduledTimeError(
   error: unknown,
 ): error is { response: { data: { response_code: string } } } {
-  if (
-    error &&
-    typeof error === "object" &&
-    "response" in error &&
-    error.response &&
-    typeof error.response === "object" &&
-    "data" in error.response
-  ) {
-    const data = error.response.data as Record<string, unknown>;
-    const message = (data.message as string) || "";
-    const code = data.response_code as string;
-    return message.includes("scheduled time") || code === "006";
-  }
-  return false;
+  const data = getErrorData(error);
+  const message = getApiErrorMessage(error, "");
+  const code = data?.response_code as string | undefined;
+
+  return message.includes("scheduled time") || code === "006";
 }
 
 export function extractScheduledTimeFromError(error: unknown): Date | null {
-  if (!error || typeof error !== "object") return null;
-
-  const errorObj = error as Record<string, unknown>;
-  const message =
-    (errorObj.response as Record<string, unknown>)?.data &&
-    typeof (errorObj.response as Record<string, unknown>).data === "object"
-      ? (
-          (errorObj.response as Record<string, unknown>).data as Record<
-            string,
-            unknown
-          >
-        ).message
-      : errorObj.message;
-
-  const errorMessage = typeof message === "string" ? message : "";
-  // Match ISO datetime format like "2026-04-19T21:00:00.000Z"
-  const match = errorMessage.match(
-    /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z?)/,
-  );
-  if (match?.[1]) {
-    return new Date(match[1]);
-  }
-  return null;
+  const { message } = getRawApiErrorMessage(error);
+  return extractScheduledTimeFromMessage(message);
 }
 
 export function formatScheduledTimeMessage(scheduledTime: Date): string {

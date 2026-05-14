@@ -7,6 +7,7 @@ import { RootState } from "@/config/stores/store";
 import type { Patient } from "@/lib/types";
 import { ArrowLeft } from "lucide-react";
 import { VideoCall } from "@/shared/components/video-call.component";
+import { getApiErrorMessage } from "@/lib/utils";
 
 function VideoConsultationPagePatient() {
   const { id: appointmentId = "" } = useParams();
@@ -32,12 +33,14 @@ function VideoConsultationPagePatient() {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const errorObj = sessionQuery.error as any;
+  const videoErrorMessage = getApiErrorMessage(
+    sessionQuery.error,
+    "Unable to load the video session.",
+  );
   const isWaitingForDoctor =
-    errorObj?.response?.data?.message ===
+    videoErrorMessage ===
       "Doctor hasn't opened the session yet. Please wait." ||
-    errorObj?.message?.includes("opened the session");
+    videoErrorMessage.includes("opened the session");
 
   return (
     <div className="flex h-full flex-col gap-6 p-6">
@@ -68,6 +71,7 @@ function VideoConsultationPagePatient() {
           sessionQuery.isError ||
           (!sessionQuery.isLoading && !sessionQuery.data?.data)
         }
+        errorMessage={videoErrorMessage}
         onRetry={() => void sessionQuery.refetch()}
       />
     </div>

@@ -1,5 +1,5 @@
-import { Loader2 } from "lucide-react";
 import type { ReferralItem } from "./consultation-detail.types.patient";
+import { PatientRecordGroupSkeleton } from "@/shared/components/patient-record-skeletons.component.shared";
 
 interface ConsultationReferralsTabProps {
   isLoading: boolean;
@@ -14,8 +14,8 @@ export function ConsultationReferralsTab({
 }: ConsultationReferralsTabProps) {
   if (isLoading) {
     return (
-      <div className="py-8 flex justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      <div className="space-y-3">
+        <PatientRecordGroupSkeleton count={2} />
       </div>
     );
   }

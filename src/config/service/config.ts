@@ -3,7 +3,9 @@ import { store } from "@/config/stores/store";
 
 const getToken = () => store.getState().auth.token ?? "";
 
-const baseUrl = `https://health-app-backend-aiv0.onrender.com/api/v1`;
+const baseUrl =
+  import.meta.env.VITE_API_BASE_URL ??
+  "https://health-app-backend-aiv0.onrender.com/api/v1";
 
 const routeBaseUrl = {
   auth: `${baseUrl}/auth`,

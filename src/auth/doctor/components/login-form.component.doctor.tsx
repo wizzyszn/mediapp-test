@@ -19,7 +19,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import { loginDoctor, getDoctorProfileReq } from "@/config/service/doctor.service";
+import {
+  loginDoctor,
+  getDoctorProfileReq,
+} from "@/config/service/doctor.service";
 import useNavigateToPage from "@/shared/hooks/use-navigate-to-page";
 import { GeneralReturnInt, Doctor, RejectedPayload } from "@/lib/types";
 import {

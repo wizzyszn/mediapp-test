@@ -21,7 +21,7 @@ import {
 import MainPageHeader from "@/shared/components/main-page-header.component.shared";
 import { profileSchema } from "@/auth/doctor/lib/schemas";
 import { cn } from "@/lib/utils";
-import { Camera, Eye, EyeOff, MoveLeft } from "lucide-react";
+import { Camera, Eye, EyeOff, LogOut, MoveLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import DoctorAvailabilityTab from "@/doctor/components/doctor-availability-tab.component.doctor";
@@ -34,7 +34,7 @@ import {
 } from "@/config/service/doctor.service";
 import TimezoneSelector from "@/shared/components/timezone-selector.component.shared";
 import { changePasswordReq } from "@/config/service/auth.service";
-import { setTimezone } from "@/config/stores/slices/auth.slice";
+import { logout, setTimezone } from "@/config/stores/slices/auth.slice";
 import { GeneralReturnInt } from "@/lib/types";
 import Spinner from "@/shared/components/spinner.component";
 
@@ -234,7 +234,11 @@ export default function DoctorProfile() {
         response?: { data?: { message?: string } };
         message?: string;
       };
-      toast.error(err.response?.data?.message || err.message || "Failed to update timezone");
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to update timezone",
+      );
     },
   });
 
@@ -361,6 +365,11 @@ export default function DoctorProfile() {
     toast.info("Changes discarded");
   }
 
+  function handleLogout() {
+    dispatch(logout());
+    navigate("/doctor/login");
+  }
+
   // Whether there is currently a real photo (existing or newly selected)
   const hasPhoto = !!previewImage || !!profile?.profile_picture_url;
 
@@ -375,15 +384,24 @@ export default function DoctorProfile() {
 
   return (
     <div className="space-y-4 sm:space-y-8">
-      <div>
+      <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-4 md:mb-2 group"
+          className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group"
         >
           <MoveLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
           Back
         </button>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={handleLogout}
+          className="h-9 gap-2 px-3 md:hidden"
+        >
+          <LogOut className="size-4" />
+          Logout
+        </Button>
       </div>
 
       <MainPageHeader

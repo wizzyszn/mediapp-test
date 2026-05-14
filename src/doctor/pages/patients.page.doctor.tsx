@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import MainPageHeader from "@/shared/components/main-page-header.component.shared";
 import { Input } from "@/components/ui/input";
-import { PatientList } from "@/doctor/components/patient-list.component.doctor";
+import {
+  PatientList,
+  type DoctorPatient,
+} from "@/doctor/components/patient-list.component.doctor";
 import { useDebounce } from "@/shared/hooks/use-debounce";
+import { getDoctorPatientsReq } from "@/config/service/doctor.service";
 
 function PatientsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -11,6 +16,27 @@ function PatientsPage() {
   const [limit] = useState(20);
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: [
+      "doctor-patients",
+      {
+        q: debouncedSearchTerm,
+        page: String(page),
+        limit: String(limit),
+      },
+    ],
+    queryFn: () =>
+      getDoctorPatientsReq({
+        q: debouncedSearchTerm,
+        page: String(page),
+        limit: String(limit),
+      }),
+    placeholderData: keepPreviousData,
+  });
+
+  const patients = (data?.data?.patients as DoctorPatient[]) || [];
+  const totalPages = data?.data?.meta?.lastPage ?? 1;
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
@@ -57,9 +83,11 @@ function PatientsPage() {
 
       <section className="flex-1 overflow-y-auto">
         <PatientList
-          searchTerm={debouncedSearchTerm}
+          patients={patients}
+          totalPages={totalPages}
           page={page}
-          limit={limit}
+          isLoading={isLoading || isFetching}
+          isDebouncing={searchTerm !== debouncedSearchTerm}
           onPageChange={(nextPage) => setPage(nextPage)}
         />
       </section>

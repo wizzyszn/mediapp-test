@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -52,18 +52,11 @@ export function HistoryTakingForm({
     retry: false,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-40 bg-white rounded-lg border border-[#E5E7EB]">
-        <Loader2 className="w-6 h-6 animate-spin text-[#5164E8]" />
-      </div>
-    );
-  }
-
   return (
     <HistoryTakingInner
       consultationId={consultationId}
       existingData={data?.data}
+      isLoading={isLoading}
       mode={mode}
       onCancel={onCancel}
       onSave={onSave}
@@ -76,6 +69,7 @@ export function HistoryTakingForm({
 function HistoryTakingInner({
   consultationId,
   existingData,
+  isLoading,
   mode,
   onCancel,
   onSave,
@@ -83,6 +77,7 @@ function HistoryTakingInner({
 }: {
   consultationId?: string;
   existingData?: Partial<HistoryTakingData>;
+  isLoading: boolean;
   mode: ConsultationMode;
   onCancel: () => void;
   onSave: () => void;
@@ -130,6 +125,45 @@ function HistoryTakingInner({
   const [isContinuePending, setIsContinuePending] = useState(false);
 
   const queryClient = useQueryClient();
+  const hydratedConsultationRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    const hydrationKey = consultationId ?? "new";
+    if (isLoading || hydratedConsultationRef.current === hydrationKey) return;
+
+    if (isEditable) {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        try {
+          setFormData(JSON.parse(saved));
+          setRecordId(existingData?._id);
+          hydratedConsultationRef.current = hydrationKey;
+          return;
+        } catch (e) {
+          console.error("Failed to parse draft from localStorage", e);
+        }
+      }
+    }
+
+    setFormData({
+      present_complaint: existingData?.present_complaint ?? "",
+      history_of_presenting_complaint:
+        existingData?.history_of_presenting_complaint ?? "",
+      past_medical_surgical_history:
+        existingData?.past_medical_surgical_history ?? "",
+      medication_history: existingData?.medication_history ?? "",
+      allergy_history: existingData?.allergy_history ?? [],
+      family_history: existingData?.family_history ?? "",
+      travel_history: existingData?.travel_history ?? "",
+      occupation: existingData?.occupation ?? "",
+      social_history: existingData?.social_history ?? "",
+      obstetric_gynaecological_history:
+        existingData?.obstetric_gynaecological_history ?? "",
+      others: existingData?.others ?? "",
+    });
+    setRecordId(existingData?._id);
+    hydratedConsultationRef.current = hydrationKey;
+  }, [consultationId, draftKey, existingData, isEditable, isLoading]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -166,7 +200,7 @@ function HistoryTakingInner({
     ) => updateHistoryTakingForConsultationReq(data, recordId!),
   });
 
-  const isPending = isCreating || isUpdating;
+  const isPending = isLoading || isCreating || isUpdating;
 
   const handleSaveSubmit = useCallback(
     async (
@@ -264,7 +298,10 @@ function HistoryTakingInner({
   });
 
   // All history fields are read-only in both locked and addendum modes
-  const fieldsDisabled = isLocked || isAddendumOnly;
+  const fieldsDisabled = isLoading || isLocked || isAddendumOnly;
+  const loadingFieldClass = isLoading
+    ? "animate-pulse !border-[#B8C3F5] !bg-[#EEF2FF] text-transparent placeholder:text-transparent"
+    : "";
 
   return (
     <div className="bg-white rounded-lg p-4 sm:p-6 space-y-5 shadow-sm border border-[#E5E7EB]">
@@ -280,7 +317,7 @@ function HistoryTakingInner({
             name="present_complaint"
             value={formData.present_complaint}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="E.g., Recurrent headache for 3 weeks..."
             disabled={fieldsDisabled}
           />
@@ -294,7 +331,7 @@ function HistoryTakingInner({
             name="history_of_presenting_complaint"
             value={formData.history_of_presenting_complaint}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="Patient reports that headaches started..."
             disabled={fieldsDisabled}
           />
@@ -308,7 +345,7 @@ function HistoryTakingInner({
             name="past_medical_surgical_history"
             value={formData.past_medical_surgical_history}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="E.g., Type 2 Diabetes Mellitus diagnosed 2015..."
             disabled={fieldsDisabled}
           />
@@ -322,7 +359,7 @@ function HistoryTakingInner({
             name="medication_history"
             value={formData.medication_history}
             onChange={handleChange}
-            className="min-h-[80px] !text-xs"
+            className={`min-h-[80px] !text-xs ${loadingFieldClass}`}
             placeholder="Current medications..."
             disabled={fieldsDisabled}
           />
@@ -336,7 +373,7 @@ function HistoryTakingInner({
             name="allergy_history"
             value={formData.allergy_history.join(", ")}
             onChange={handleAllergyChange}
-            className="min-h-[60px] !text-xs"
+            className={`min-h-[60px] !text-xs ${loadingFieldClass}`}
             placeholder="Comma separated allergies e.g. Penicillin, Peanuts"
             disabled={fieldsDisabled}
           />
@@ -348,7 +385,7 @@ function HistoryTakingInner({
             name="family_history"
             value={formData.family_history}
             onChange={handleChange}
-            className="min-h-[80px] !text-xs"
+            className={`min-h-[80px] !text-xs ${loadingFieldClass}`}
             placeholder="Father had hypertension..."
             disabled={fieldsDisabled}
           />
@@ -360,7 +397,7 @@ function HistoryTakingInner({
             name="travel_history"
             value={formData.travel_history}
             onChange={handleChange}
-            className="min-h-[60px] !text-xs"
+            className={`min-h-[60px] !text-xs ${loadingFieldClass}`}
             placeholder="Recent travel history..."
             disabled={fieldsDisabled}
           />
@@ -375,7 +412,7 @@ function HistoryTakingInner({
             name="occupation"
             value={formData.occupation}
             onChange={handleChange}
-            className="!text-xs"
+            className={`!text-xs ${loadingFieldClass}`}
             placeholder="Software Engineer"
             disabled={fieldsDisabled}
           />
@@ -387,7 +424,7 @@ function HistoryTakingInner({
             name="social_history"
             value={formData.social_history}
             onChange={handleChange}
-            className="min-h-[80px] !text-xs"
+            className={`min-h-[80px] !text-xs ${loadingFieldClass}`}
             placeholder="Smoking, alcohol, living situation..."
             disabled={fieldsDisabled}
           />
@@ -401,7 +438,7 @@ function HistoryTakingInner({
             name="obstetric_gynaecological_history"
             value={formData.obstetric_gynaecological_history}
             onChange={handleChange}
-            className="min-h-[60px] !text-xs"
+            className={`min-h-[60px] !text-xs ${loadingFieldClass}`}
             placeholder="G2P2, LMP..."
             disabled={fieldsDisabled}
           />
@@ -413,7 +450,7 @@ function HistoryTakingInner({
             name="others"
             value={formData.others}
             onChange={handleChange}
-            className="min-h-[60px] !text-xs"
+            className={`min-h-[60px] !text-xs ${loadingFieldClass}`}
             placeholder="Any additional relevant information..."
             disabled={fieldsDisabled}
           />

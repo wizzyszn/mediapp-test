@@ -20,7 +20,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import { signInPatienReq, getPatientProfileReq } from "@/config/service/patient.service";
+import {
+  signInPatienReq,
+  getPatientProfileReq,
+} from "@/config/service/patient.service";
 import useNavigateToPage from "@/shared/hooks/use-navigate-to-page";
 import { GeneralReturnInt, Patient, RejectedPayload } from "@/lib/types";
 import {

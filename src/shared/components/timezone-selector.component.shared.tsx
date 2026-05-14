@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ALL_TIMEZONES = ((Intl as any).supportedValuesOf("timeZone") as string[]);
+const ALL_TIMEZONES = (Intl as any).supportedValuesOf("timeZone") as string[];
 
 interface TimezoneSelectorProps {
   value: string;
@@ -14,7 +14,11 @@ interface TimezoneSelectorProps {
   className?: string;
 }
 
-export default function TimezoneSelector({ value, onChange, className }: TimezoneSelectorProps) {
+export default function TimezoneSelector({
+  value,
+  onChange,
+  className,
+}: TimezoneSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -29,7 +33,7 @@ export default function TimezoneSelector({ value, onChange, className }: Timezon
   const groupedTimezones = useMemo(() => {
     const term = debouncedSearch.toLowerCase().replace(/_/g, " ");
     const filtered = ALL_TIMEZONES.filter((tz) =>
-      tz.toLowerCase().replace(/_/g, " ").includes(term)
+      tz.toLowerCase().replace(/_/g, " ").includes(term),
     );
 
     const groups: Record<string, string[]> = {};
@@ -47,7 +51,7 @@ export default function TimezoneSelector({ value, onChange, className }: Timezon
     <div
       className={cn(
         "w-full rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden",
-        className
+        className,
       )}
     >
       <div className="sticky top-0 z-10 flex flex-col space-y-1.5 border-b bg-card p-6">
@@ -76,7 +80,7 @@ export default function TimezoneSelector({ value, onChange, className }: Timezon
             "mt-4 p-4 rounded-lg flex items-center justify-between border transition-all duration-300",
             value
               ? "bg-primary/10 border-primary/20"
-              : "bg-muted/50 border-transparent"
+              : "bg-muted/50 border-transparent",
           )}
         >
           <span className="text-sm font-medium">Selected Timezone</span>
@@ -90,7 +94,9 @@ export default function TimezoneSelector({ value, onChange, className }: Timezon
         {Object.keys(groupedTimezones).length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
             <Globe className="w-12 h-12 mb-3 opacity-20" />
-            <p className="text-sm font-medium">No timezones found for "{debouncedSearch}"</p>
+            <p className="text-sm font-medium">
+              No timezones found for "{debouncedSearch}"
+            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-8">
@@ -105,7 +111,9 @@ export default function TimezoneSelector({ value, onChange, className }: Timezon
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                   {tzs.map((tz) => {
                     const isSelected = value === tz;
-                    const displayName = (tz.split("/").slice(1).join("/") || tz).replace(/_/g, " ");
+                    const displayName = (
+                      tz.split("/").slice(1).join("/") || tz
+                    ).replace(/_/g, " ");
                     return (
                       <Button
                         key={tz}

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useFormContext, Controller } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { AlertCircle, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -119,6 +119,8 @@ const ChooseTimeSlot = ({
 
   const selectedTimeSlot = watch("timeSlot");
   const selectedDateValue = watch("selectedDate");
+  const originalSelectedDate = watch("originalSelectedDate");
+  const originalTimeSlot = watch("originalTimeSlot");
 
   const today = startOfToday();
   const selectedDate = parseStoredDate(selectedDateValue) ?? today;
@@ -129,6 +131,16 @@ const ChooseTimeSlot = ({
     !!selectedTimeSlot &&
     (!isSameDay(selectedDate, today) ||
       !isTimeSlotInPast(selectedTimeSlot, selectedDate));
+
+  const isSameAsOriginalRescheduleSlot = Boolean(
+    isReschedule &&
+    selectedDateValue &&
+    selectedTimeSlot &&
+    originalSelectedDate &&
+    originalTimeSlot &&
+    selectedDateValue === originalSelectedDate &&
+    selectedTimeSlot === originalTimeSlot,
+  );
 
   const handleSelectDay = (date: Date | undefined) => {
     if (!date) return;
@@ -154,7 +166,9 @@ const ChooseTimeSlot = ({
     setValue("timeSlot", slot, { shouldValidate: true });
   };
 
-  const canContinue = Boolean(selectedDate && isSelectedTimeValid);
+  const canContinue = Boolean(
+    selectedDate && isSelectedTimeValid && !isSameAsOriginalRescheduleSlot,
+  );
 
   // ── Parse time slot into datetime + duration for availability check ──
   const parseTimeSlot = (slot: string) => {
@@ -339,8 +353,32 @@ const ChooseTimeSlot = ({
               {errors.timeSlot.message}
             </p>
           )}
+          {isSameAsOriginalRescheduleSlot && (
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>
+                Choose a different date or time to reschedule this appointment.
+              </p>
+            </div>
+          )}
         </div>
       </div>
+
+      {isReschedule && (
+        <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-foreground">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div className="space-y-1">
+            <p className="font-medium">
+              Reschedule requests depend on availability.
+            </p>
+            <p className="text-muted-foreground">
+              We will try to book your selected time or match you with an
+              available provider. If that is not possible, we will guide you to
+              another option.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-2 md:gap-3 pt-2">
         <MotionButton

@@ -22,15 +22,16 @@ function DashHeader({
         <div className="md:hidden flex items-center scale-90 origin-left">
           <Logo isBackground={false} isExpanded={false} />
         </div>
-        {/* Mobile Menu Button */}
-        <button
-          onClick={onMobileMenuClick}
-          className="md:hidden p-2 hover:bg-gray-100 active:bg-gray-200 rounded-md text-gray-600 hover:text-gray-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          aria-label="Toggle navigation menu"
-          aria-expanded={isMobileSidebarOpen}
-        >
-          <Menu className="size-5 sm:size-6" />
-        </button>
+        {onMobileMenuClick && (
+          <button
+            onClick={onMobileMenuClick}
+            className="md:hidden p-2 hover:bg-gray-100 active:bg-gray-200 rounded-md text-gray-600 hover:text-gray-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            aria-label="Toggle navigation menu"
+            aria-expanded={isMobileSidebarOpen}
+          >
+            <Menu className="size-5 sm:size-6" />
+          </button>
+        )}
         {leftContent && leftContent}
       </div>
       <div className="flex items-center gap-3 sm:gap-5">

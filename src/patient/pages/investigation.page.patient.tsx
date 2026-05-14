@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import useUrlSearchParams from "@/shared/hooks/use-url-search-params";
@@ -18,6 +17,7 @@ import {
   InvestigationGroup,
   InvestigationPatientProfile,
 } from "@/patient/components/investigation/investigation.types.patient";
+import { PatientRecordGroupSkeleton } from "@/shared/components/patient-record-skeletons.component.shared";
 
 function Investigation() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -94,12 +94,7 @@ function Investigation() {
 
           <div className="flex flex-col gap-2">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-2">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-[#6C6C6C]">
-                  Loading investigations...
-                </p>
-              </div>
+              <PatientRecordGroupSkeleton count={4} />
             ) : isError ? (
               <div className="text-center py-12 text-red-500">
                 Failed to load investigation history. Please try again later.

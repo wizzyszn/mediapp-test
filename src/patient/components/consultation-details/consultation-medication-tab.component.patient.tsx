@@ -1,6 +1,7 @@
-import { Loader2, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { GroupedMedicationItem } from "./consultation-detail.types.patient";
+import { PatientRecordGroupSkeleton } from "@/shared/components/patient-record-skeletons.component.shared";
 
 interface MedicationGroup {
   formulary: string;
@@ -23,8 +24,8 @@ export function ConsultationMedicationTab({
 }: ConsultationMedicationTabProps) {
   if (isLoading) {
     return (
-      <div className="py-8 flex justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      <div className="space-y-3">
+        <PatientRecordGroupSkeleton count={2} />
       </div>
     );
   }

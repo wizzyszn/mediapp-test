@@ -1,9 +1,4 @@
-import {
-  CalendarDays,
-  ChevronUp,
-  Download,
-  Eye,
-} from "lucide-react";
+import { CalendarDays, ChevronUp, Download, Eye } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { formatUtcDate } from "@/lib/utils";
@@ -66,8 +61,7 @@ export function MedicationGroupCard({
   onToggle: (groupId: string) => void;
   onDownload: (group: MedicationGroup) => void;
 }) {
-  const consultationId =
-    group.consultation?._id || `unknown-${index}`;
+  const consultationId = group.consultation?._id || `unknown-${index}`;
 
   const consultationTitle =
     group.consultation?.appointment_id?.reason_for_visit ||
@@ -136,10 +130,7 @@ export function MedicationGroupCard({
             className="h-8 w-8 rounded-[8px] border border-[#F0F0F0] bg-white p-0 text-[#2B2B2B] hover:bg-[#F7F7F7] sm:h-10 sm:w-10"
             title="Download PDF"
           >
-            <Download
-              className="h-3.5 w-3.5 sm:h-4 sm:w-4"
-              strokeWidth={1.8}
-            />
+            <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={1.8} />
           </Button>
 
           <Button
@@ -162,15 +153,13 @@ export function MedicationGroupCard({
         </div>
       </article>
 
-      {isExpanded &&
-        group.medications &&
-        group.medications.length > 0 && (
-          <div className="mb-2 ml-4 mr-4 flex flex-col gap-2 border-l-2 border-primary/20 py-2 pl-4">
-            {group.medications.map((med) => (
-              <MedicationRow key={med._id} med={med} />
-            ))}
-          </div>
-        )}
+      {isExpanded && group.medications && group.medications.length > 0 && (
+        <div className="mb-2 ml-4 mr-4 flex flex-col gap-2 border-l-2 border-primary/20 py-2 pl-4">
+          {group.medications.map((med) => (
+            <MedicationRow key={med._id} med={med} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

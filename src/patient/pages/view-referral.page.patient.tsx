@@ -7,7 +7,6 @@ import {
   ChevronRight,
   MoveLeft,
   MapPin,
-  Loader2,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +14,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Button } from "@/components/ui/button";
 import { getSingleReferralForPatientReq } from "@/config/service/patient.service";
+import { PatientReferralDetailSkeleton } from "@/shared/components/patient-record-skeletons.component.shared";
 
 interface jsPDFWithAutoTable extends jsPDF {
   lastAutoTable: {
@@ -81,11 +81,7 @@ export default function ViewReferralDetails() {
   };
 
   if (isLoading) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+    return <PatientReferralDetailSkeleton />;
   }
 
   if (isError || !referral) {

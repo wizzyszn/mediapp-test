@@ -36,4 +36,5 @@ export interface Consultation extends BaseItem {
 
 export interface Appointment extends BaseItem {
   status: AppointmentStatus;
+  hasRescheduledHistory?: boolean;
 }

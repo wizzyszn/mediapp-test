@@ -13,6 +13,7 @@ import { EmptyListState } from "@/shared/components/empty-list-state.component.s
 import useUrlSearchParams from "@/shared/hooks/use-url-search-params";
 import { useSelector } from "react-redux";
 import { RootState } from "@/config/stores/store";
+import { ListRowSkeleton } from "@/shared/components/list-row-skeleton.component.shared";
 
 export function ConsultationList({
   searchTerm = "",
@@ -85,10 +86,7 @@ export function ConsultationList({
     <div className="mt-0 flex flex-col gap-2">
       {isLoading ? (
         Array.from({ length: inTabs ? 3 : 5 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-[72px] w-full rounded-xl bg-muted animate-pulse border border-border"
-          />
+          <ListRowSkeleton key={i} variant="date" />
         ))
       ) : filteredConsultations.length === 0 ? (
         <EmptyListState

@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { Loader2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +19,7 @@ import {
   MedicationPatientProfile,
   MedicationItem,
 } from "@/patient/components/medication/medication.types.patient";
+import { PatientRecordGroupSkeleton } from "@/shared/components/patient-record-skeletons.component.shared";
 
 interface jsPDFWithAutoTable extends jsPDF {
   lastAutoTable: {
@@ -400,12 +400,7 @@ export default function MedicationsPage() {
 
           <div className="flex flex-col gap-2">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-2">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-[#6C6C6C]">
-                  Loading medications...
-                </p>
-              </div>
+              <PatientRecordGroupSkeleton count={4} />
             ) : isError ? (
               <div className="text-center py-12 text-red-500">
                 Failed to load medication history. Please try again later.

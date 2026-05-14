@@ -6,62 +6,93 @@ import { Activity, Clock, Beaker, Pill } from "lucide-react";
 import { useSelector } from "react-redux";
 import { MetricCard } from "../components/metric-card.component.patient";
 import { ConsultationAndAppointmentList } from "../components/consultation-and-appointment-list.component.patient";
+import { useQuery } from "@tanstack/react-query";
+import {
+  MetricTrend,
+  getPatientDashMetrics,
+} from "@/config/service/patient.service";
 
-/* ------------------------------------------------------------------ */
-/*  Mock data — replace with real API calls when ready                */
-/* ------------------------------------------------------------------ */
-
-const MOCK_METRICS = [
-  {
-    label: "Consultations",
-    value: 24,
-    trend: "+12%",
-    trendDir: "up" as const,
+const METRICS_MAPPER = {
+  consultations: {
     icon: Activity,
     gradient: "from-blue-500 to-indigo-600",
     bgLight: "bg-blue-50",
     textAccent: "text-blue-600",
   },
-  {
-    label: "Schedules",
-    value: 8,
-    trend: "+4%",
-    trendDir: "up" as const,
+  appointments: {
     icon: Clock,
     gradient: "from-emerald-500 to-teal-600",
     bgLight: "bg-emerald-50",
     textAccent: "text-emerald-600",
   },
-  {
-    label: "Investigations",
-    value: 5,
-    trend: "-2%",
-    trendDir: "down" as const,
+  investigations: {
     icon: Beaker,
     gradient: "from-amber-500 to-orange-600",
     bgLight: "bg-amber-50",
     textAccent: "text-amber-600",
   },
-  {
-    label: "Medications",
-    value: 12,
-    trend: "+8%",
-    trendDir: "up" as const,
+  medications: {
     icon: Pill,
     gradient: "from-violet-500 to-purple-600",
     bgLight: "bg-violet-50",
     textAccent: "text-violet-600",
   },
-];
-
-/* ------------------------------------------------------------------ */
-/*  Dashboard page                                                    */
-/* ------------------------------------------------------------------ */
+};
 
 function PatientDash() {
   const { user } = useSelector(
     (state: RootState) => state.auth,
   ) as AuthState<Patient>;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["patient-dash-metrics"],
+    queryFn: () => getPatientDashMetrics(),
+  });
+
+  const metrics = data?.data ?? {
+    consultations: {
+      total: 0,
+      current: 0,
+      previous: 0,
+      change_percent: 0,
+      trend: "0%",
+    },
+    medications: {
+      total: 0,
+      current: 0,
+      previous: 0,
+      change_percent: 0,
+      trend: "0%",
+    },
+    investigations: {
+      total: 0,
+      current: 0,
+      previous: 0,
+      change_percent: 0,
+      trend: "0%",
+    },
+    appointments: {
+      total: 0,
+      current: 0,
+      previous: 0,
+      change_percent: 0,
+      trend: "0%",
+    },
+  };
+
+  const values = Object.entries(metrics).map(([key, value]) => {
+    const k = key as keyof typeof METRICS_MAPPER;
+    const v = value as MetricTrend;
+
+    return {
+      ...METRICS_MAPPER[k],
+      label: k.charAt(0).toUpperCase() + k.slice(1),
+      value: v.total,
+      current: v.current,
+      trend: v.trend,
+      trendDir: (v.change_percent >= 0 ? "up" : "down") as "up" | "down",
+    };
+  });
 
   return (
     <div className="space-y-8">
@@ -74,8 +105,8 @@ function PatientDash() {
       {/* Metric cards */}
       <section>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-          {MOCK_METRICS.map((m) => (
-            <MetricCard key={m.label} {...m} />
+          {values.map((m, index) => (
+            <MetricCard key={index} {...m} isLoading={isLoading} />
           ))}
         </div>
       </section>

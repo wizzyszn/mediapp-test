@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -50,18 +50,11 @@ export function PhysicalExamForm({
     retry: false,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-40 bg-white rounded-lg border border-[#E5E7EB]">
-        <Loader2 className="w-6 h-6 animate-spin text-[#5164E8]" />
-      </div>
-    );
-  }
-
   return (
     <PhysicalExamInner
       consultationId={consultationId}
       existingData={data?.data}
+      isLoading={isLoading}
       mode={mode}
       onCancel={onCancel}
       onSave={onSave}
@@ -74,6 +67,7 @@ export function PhysicalExamForm({
 function PhysicalExamInner({
   consultationId,
   existingData,
+  isLoading,
   mode,
   onCancel,
   onSave,
@@ -81,6 +75,7 @@ function PhysicalExamInner({
 }: {
   consultationId?: string;
   existingData?: Partial<PhysicalExamData>;
+  isLoading: boolean;
   mode: ConsultationMode;
   onCancel: () => void;
   onSave: () => void;
@@ -123,6 +118,41 @@ function PhysicalExamInner({
   const [isContinuePending, setIsContinuePending] = useState(false);
 
   const queryClient = useQueryClient();
+  const hydratedConsultationRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    const hydrationKey = consultationId ?? "new";
+    if (isLoading || hydratedConsultationRef.current === hydrationKey) return;
+
+    if (isEditable) {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        try {
+          setFormData(JSON.parse(saved));
+          setRecordId(existingData?._id);
+          hydratedConsultationRef.current = hydrationKey;
+          return;
+        } catch (e) {
+          console.error("Failed to parse draft from localStorage", e);
+        }
+      }
+    }
+
+    setFormData({
+      general_physical: existingData?.general_physical ?? "",
+      nervous_system: existingData?.nervous_system ?? "",
+      respiratory_system: existingData?.respiratory_system ?? "",
+      cardiovascular_system: existingData?.cardiovascular_system ?? "",
+      gastrointestinal_system: existingData?.gastrointestinal_system ?? "",
+      genitourinary_system: existingData?.genitourinary_system ?? "",
+      musculoskeletal_system: existingData?.musculoskeletal_system ?? "",
+      ENT: existingData?.ENT ?? "",
+      obstetric_gynaecological: existingData?.obstetric_gynaecological ?? "",
+      others: existingData?.others ?? "",
+    });
+    setRecordId(existingData?._id);
+    hydratedConsultationRef.current = hydrationKey;
+  }, [consultationId, draftKey, existingData, isEditable, isLoading]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!isEditable) return;
@@ -145,7 +175,7 @@ function PhysicalExamInner({
     ) => updatePhysicalExamForConsultationReq(data, recordId!),
   });
 
-  const isPending = isCreating || isUpdating;
+  const isPending = isLoading || isCreating || isUpdating;
 
   const handleSaveSubmit = useCallback(
     async (
@@ -242,7 +272,10 @@ function PhysicalExamInner({
 
   // Physical exam fields are read-only in both locked and addendum modes —
   // this section is never the addendum target, so both collapse to disabled.
-  const fieldsDisabled = isLocked || isAddendumOnly;
+  const fieldsDisabled = isLoading || isLocked || isAddendumOnly;
+  const loadingFieldClass = isLoading
+    ? "animate-pulse !border-[#B8C3F5] !bg-[#EEF2FF] text-transparent placeholder:text-transparent"
+    : "";
 
   return (
     <div className="bg-white rounded-lg p-4 sm:p-6 space-y-5 shadow-sm border border-[#E5E7EB]">
@@ -258,7 +291,7 @@ function PhysicalExamInner({
             name="general_physical"
             value={formData.general_physical}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="Patient alert and oriented..."
             disabled={fieldsDisabled}
           />
@@ -270,7 +303,7 @@ function PhysicalExamInner({
             name="nervous_system"
             value={formData.nervous_system}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="Conscious and alert..."
             disabled={fieldsDisabled}
           />
@@ -284,7 +317,7 @@ function PhysicalExamInner({
             name="respiratory_system"
             value={formData.respiratory_system}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="Chest clear..."
             disabled={fieldsDisabled}
           />
@@ -298,7 +331,7 @@ function PhysicalExamInner({
             name="cardiovascular_system"
             value={formData.cardiovascular_system}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="Heart sounds S1 S2 normal..."
             disabled={fieldsDisabled}
           />
@@ -312,7 +345,7 @@ function PhysicalExamInner({
             name="gastrointestinal_system"
             value={formData.gastrointestinal_system}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="Abdomen soft..."
             disabled={fieldsDisabled}
           />
@@ -326,7 +359,7 @@ function PhysicalExamInner({
             name="genitourinary_system"
             value={formData.genitourinary_system}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="Enter examination findings..."
             disabled={fieldsDisabled}
           />
@@ -340,7 +373,7 @@ function PhysicalExamInner({
             name="musculoskeletal_system"
             value={formData.musculoskeletal_system}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="Full range of movement..."
             disabled={fieldsDisabled}
           />
@@ -352,7 +385,7 @@ function PhysicalExamInner({
             name="ENT"
             value={formData.ENT}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="Enter examination findings..."
             disabled={fieldsDisabled}
           />
@@ -366,7 +399,7 @@ function PhysicalExamInner({
             name="obstetric_gynaecological"
             value={formData.obstetric_gynaecological}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="Enter examination findings..."
             disabled={fieldsDisabled}
           />
@@ -378,7 +411,7 @@ function PhysicalExamInner({
             name="others"
             value={formData.others}
             onChange={handleChange}
-            className="min-h-[100px] !text-xs"
+            className={`min-h-[100px] !text-xs ${loadingFieldClass}`}
             placeholder="Any additional examination findings..."
             disabled={fieldsDisabled}
           />

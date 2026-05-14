@@ -28,7 +28,7 @@ import {
 import MainPageHeader from "@/shared/components/main-page-header.component.shared";
 import { profileSchema } from "@/auth/patient/lib/schemas";
 import { cn } from "@/lib/utils";
-import { Camera, Eye, EyeOff, MoveLeft } from "lucide-react";
+import { Camera, Eye, EyeOff, LogOut, MoveLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   getPatientProfileReq,
@@ -39,7 +39,7 @@ import {
 import { changePasswordReq } from "@/config/service/auth.service";
 import { GeneralReturnInt, PatientProfileInterface } from "@/lib/types";
 import TimezoneSelector from "@/shared/components/timezone-selector.component.shared";
-import { setTimezone } from "@/config/stores/slices/auth.slice";
+import { logout, setTimezone } from "@/config/stores/slices/auth.slice";
 import Spinner from "@/shared/components/spinner.component";
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -247,7 +247,11 @@ export default function PatientProfile() {
         response?: { data?: { message?: string } };
         message?: string;
       };
-      toast.error(err.response?.data?.message || err.message || "Failed to update timezone");
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to update timezone",
+      );
     },
   });
 
@@ -400,6 +404,11 @@ export default function PatientProfile() {
     toast.info("Changes discarded");
   }
 
+  function handleLogout() {
+    dispatch(logout());
+    navigate("/patient/login");
+  }
+
   // Whether there is currently a real photo (existing or newly selected)
   const hasPhoto = !!previewImage || !!profile?.profile_picture_url;
 
@@ -409,13 +418,24 @@ export default function PatientProfile() {
   return (
     <div className="space-y-8">
       <div>
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-4 md:mb-5 group w-fit"
-        >
-          <MoveLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
-          Back
-        </button>
+        <div className="mb-4 flex items-center justify-between md:mb-5">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex w-fit items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground group"
+          >
+            <MoveLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
+            Back
+          </button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleLogout}
+            className="h-9 gap-2 px-3 md:hidden"
+          >
+            <LogOut className="size-4" />
+            Logout
+          </Button>
+        </div>
         <MainPageHeader
           heading="Patient Profile"
           subHeading="Manage your personal information and medical history"
@@ -476,9 +496,7 @@ export default function PatientProfile() {
                   removePhotoMutation.mutate();
                 }}
                 disabled={
-                  !isEditing || 
-                  !hasPhoto || 
-                  removePhotoMutation.isPending
+                  !isEditing || !hasPhoto || removePhotoMutation.isPending
                 }
               >
                 {removePhotoMutation.isPending ? "Removing..." : "Remove photo"}
@@ -801,7 +819,7 @@ export default function PatientProfile() {
         <Form {...timezoneForm}>
           <form
             onSubmit={timezoneForm.handleSubmit((values) =>
-              timezoneMutation.mutate(values)
+              timezoneMutation.mutate(values),
             )}
             className="space-y-6"
           >
@@ -829,9 +847,7 @@ export default function PatientProfile() {
                 disabled={timezoneMutation.isPending}
                 className="w-full sm:w-[200px]"
               >
-                {timezoneMutation.isPending
-                  ? "Updating..."
-                  : "Update Timezone"}
+                {timezoneMutation.isPending ? "Updating..." : "Update Timezone"}
               </Button>
             </div>
           </form>

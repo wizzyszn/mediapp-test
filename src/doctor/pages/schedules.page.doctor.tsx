@@ -39,7 +39,8 @@ function Schedules() {
   const refinedAppointments: FullCalendarData = (
     data?.data?.appointments || []
   ).map((appointment) => {
-    const timeZone = userTimezone || appointment.timezone_snapshot || getBrowserTimeZone();
+    const timeZone =
+      userTimezone || appointment.timezone_snapshot || getBrowserTimeZone();
     const zonedStart = toZonedTime(
       new Date(appointment.scheduled_start_at_utc),
       timeZone,
@@ -85,7 +86,8 @@ function Schedules() {
 
   const refinedBlackouts: FullCalendarData = (data?.data?.blackouts || []).map(
     (blackout) => {
-      const timeZone = userTimezone || blackout.timezone || getBrowserTimeZone();
+      const timeZone =
+        userTimezone || blackout.timezone || getBrowserTimeZone();
       const zonedStart = toZonedTime(new Date(blackout.start_at_utc), timeZone);
       const zonedEnd = toZonedTime(new Date(blackout.end_at_utc), timeZone);
 

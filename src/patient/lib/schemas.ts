@@ -33,6 +33,8 @@ export const timeSlotSchema = z.object({
   consultationType: z.string().min(1, "Please select consultation type"),
   selectedDate: z.string().min(1, "Please select a date"),
   timeSlot: z.string().min(1, "Please select a time slot"),
+  originalSelectedDate: z.string().optional(),
+  originalTimeSlot: z.string().optional(),
   suggestedDoctorId: z.string().optional(),
   suggestedDoctorName: z.string().optional(),
   suggestedDoctorSpecialty: z.string().optional(),

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -41,18 +41,11 @@ export function TreatmentPlanForm({
     retry: false,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-40 bg-white rounded-lg border border-[#E5E7EB]">
-        <Loader2 className="w-6 h-6 animate-spin text-[#5164E8]" />
-      </div>
-    );
-  }
-
   return (
     <TreatmentPlanInner
       consultationId={consultationId}
       existingData={data?.data}
+      isLoading={isLoading}
       mode={mode}
       onCancel={onCancel}
       onSave={onSave}
@@ -65,6 +58,7 @@ export function TreatmentPlanForm({
 function TreatmentPlanInner({
   consultationId,
   existingData,
+  isLoading,
   mode,
   onCancel,
   onSave,
@@ -72,6 +66,7 @@ function TreatmentPlanInner({
 }: {
   consultationId?: string;
   existingData?: Partial<TreatmentPlanData>;
+  isLoading: boolean;
   mode: ConsultationMode;
   onCancel: () => void;
   onSave: () => void;
@@ -98,6 +93,30 @@ function TreatmentPlanInner({
   const [isContinuePending, setIsContinuePending] = useState(false);
 
   const queryClient = useQueryClient();
+  const hydratedConsultationRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    const hydrationKey = consultationId ?? "new";
+    if (isLoading || hydratedConsultationRef.current === hydrationKey) return;
+
+    if (isEditable) {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        setTreatmentDetails(saved);
+        setRecordId(existingData?._id);
+        hydratedConsultationRef.current = hydrationKey;
+        return;
+      }
+    }
+
+    setTreatmentDetails(existingData?.treatment_plan_details ?? "");
+    setRecordId(existingData?._id);
+    hydratedConsultationRef.current = hydrationKey;
+  }, [consultationId, draftKey, existingData, isEditable, isLoading]);
+
+  const loadingFieldClass = isLoading
+    ? "animate-pulse !border-[#B8C3F5] !bg-[#EEF2FF] text-transparent placeholder:text-transparent"
+    : "";
 
   const { mutateAsync: createMutation, isPending: isCreating } = useMutation({
     mutationFn: (
@@ -111,7 +130,7 @@ function TreatmentPlanInner({
     ) => updateTreatmentPlanForConsultationReq(data, recordId!),
   });
 
-  const isPending = isCreating || isUpdating;
+  const isPending = isLoading || isCreating || isUpdating;
 
   const handleSaveSubmit = useCallback(
     async (
@@ -220,10 +239,10 @@ function TreatmentPlanInner({
             setTreatmentDetails(e.target.value);
             localStorage.setItem(draftKey, e.target.value);
           }}
-          className="min-h-[320px] !text-xs"
+          className={`min-h-[320px] !text-xs ${loadingFieldClass}`}
           placeholder="Enter detailed treatment plan, advice, follow-up instructions..."
           // Locked when the page is fully locked OR when only the addendum is editable
-          disabled={isLocked || isAddendumOnly}
+          disabled={isLoading || isLocked || isAddendumOnly}
         />
         <p className="text-sm text-[#6B7280] mt-2 flex items-center gap-2">
           <svg

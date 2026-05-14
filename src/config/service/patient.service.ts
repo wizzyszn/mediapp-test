@@ -11,6 +11,67 @@ import {
 } from "@/lib/types";
 import { options, requestHandler, urlGenerator } from "./config";
 
+type PatientAppointmentStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "ACTIVE"
+  | "COMPLETED"
+  | "CANCELED"
+  | "NO_SHOW"
+  | "FAILED"
+  | "FORFEITED"
+  | "RESCHEDULED";
+
+type PatientAppointmentProfileSnapshot = {
+  first_name: string;
+  last_name: string;
+  date_of_birth: string;
+  gender: string;
+  marital_status: string;
+  occupation: string;
+  present_complaint: string;
+};
+
+type PatientAppointmentPatient = {
+  _id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  full_name: string;
+  gender: string;
+  marital_status: string;
+  occupation: string;
+  profile_picture_url?: string;
+};
+
+type PatientAppointmentRescheduledHistoryItem = {
+  _id: string;
+  appointment_number: string;
+  patient_id: PatientAppointmentPatient;
+  doctor_id: {
+    _id: string;
+    first_name: string;
+    last_name: string;
+    full_name: string;
+    email: string;
+    specializations: string[];
+    profile_picture_url?: string;
+  };
+  scheduled_start_at_utc: string;
+  scheduled_end_at_utc: string;
+  timezone_snapshot: string;
+  status: PatientAppointmentStatus;
+  reason_for_visit: string;
+  Medical_conditions?: string[];
+  allergies?: string[];
+  booking_profile_snapshot: PatientAppointmentProfileSnapshot;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  cancelled_by?: string;
+  cancelled_reason?: string;
+};
+
 // Initiate Patient Registration to get OTP for email verification
 export const initiatePatientRegistration = (data: { email: string }) => {
   const url = urlGenerator("auth", "patients/register/initiate", false);
@@ -471,16 +532,8 @@ export const getAppointmentsReq = (param: {
           present_complaint: string;
         };
         consultation_id: string;
-        status:
-          | "PENDING"
-          | "CONFIRMED"
-          | "ACTIVE"
-          | "COMPLETED"
-          | "CANCELED"
-          | "NO_SHOW"
-          | "FAILED"
-          | "FORFEITED"
-          | "RESCHEDULED";
+        status: PatientAppointmentStatus;
+        rescheduled_history: PatientAppointmentRescheduledHistoryItem[];
       }[];
       pagination: {
         page: number;
@@ -499,7 +552,7 @@ export const getSingleAppointmentReq = (id: string) => {
     GeneralReturnInt<{
       _id: string;
       appointment_number: string;
-      patient_id: string;
+      patient_id: PatientAppointmentPatient;
       doctor_id: {
         _id: string;
         first_name: string;
@@ -507,20 +560,12 @@ export const getSingleAppointmentReq = (id: string) => {
         full_name: string;
         email: string;
         specializations: string[];
+        profile_picture_url?: string;
       };
       scheduled_start_at_utc: string;
       scheduled_end_at_utc: string;
       timezone_snapshot: string;
-      status:
-        | "PENDING"
-        | "CONFIRMED"
-        | "ACTIVE"
-        | "COMPLETED"
-        | "CANCELED"
-        | "NO_SHOW"
-        | "FAILED"
-        | "FORFEITED"
-        | "RESCHEDULED";
+      status: PatientAppointmentStatus;
       reason_for_visit: string;
       booking_profile_snapshot: {
         first_name: string;
@@ -538,17 +583,16 @@ export const getSingleAppointmentReq = (id: string) => {
         consultation_id: string;
         title: string;
         details: string;
-        status:
-          | "PENDING"
-          | "CONFIRMED"
-          | "ACTIVE"
-          | "COMPLETED"
-          | "CANCELED"
-          | "NO_SHOW"
-          | "FAILED"
-          | "FORFEITED"
-          | "RESCHEDULED";
+        status: PatientAppointmentStatus;
       };
+      rescheduled_from_appointment_id?: string;
+      createdAt: string;
+      updatedAt: string;
+      __v: number;
+      daily_room_expires_at?: string;
+      daily_room_name?: string;
+      daily_room_url?: string;
+      rescheduled_history: PatientAppointmentRescheduledHistoryItem[];
     }>
   >(url, options("GET", null, true));
 };
@@ -1250,5 +1294,25 @@ export const getGroupedReferralsForConsultationsReq = () => {
         }[];
       }[]
     >
+  >(url, options("GET", undefined, true));
+};
+
+export interface MetricTrend {
+  total: number;
+  current: number;
+  previous: number;
+  change_percent: number;
+  trend: string;
+}
+export const getPatientDashMetrics = () => {
+  const url = urlGenerator("patients", "me/metrics", false);
+
+  return requestHandler<
+    GeneralReturnInt<{
+      consultations: MetricTrend;
+      medications: MetricTrend;
+      investigations: MetricTrend;
+      appointments: MetricTrend;
+    }>
   >(url, options("GET", undefined, true));
 };

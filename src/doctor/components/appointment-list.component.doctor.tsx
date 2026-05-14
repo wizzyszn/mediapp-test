@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { CalendarDays, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronRight, RefreshCw } from "lucide-react";
 import { ItemRow } from "./item-row.component.doctor";
 import { AppointmentStatusBadge } from "./appointment-status-badge.component.doctor";
 import { Appointment } from "../types/consultation.types";
@@ -13,6 +13,7 @@ import useUrlSearchParams from "@/shared/hooks/use-url-search-params";
 import { EmptyListState } from "@/shared/components/empty-list-state.component.shared";
 import { useSelector } from "react-redux";
 import { RootState } from "@/config/stores/store";
+import { ListRowSkeleton } from "@/shared/components/list-row-skeleton.component.shared";
 
 export function AppointmentList({
   searchTerm = "",
@@ -83,6 +84,7 @@ export function AppointmentList({
       date,
       time,
       status: item.status,
+      hasRescheduledHistory: (item.rescheduled_history?.length ?? 0) > 0,
     };
   });
 
@@ -93,10 +95,7 @@ export function AppointmentList({
     <div className="mt-0 flex flex-col gap-2">
       {isLoading ? (
         Array.from({ length: inTabs ? 3 : 5 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-[72px] w-full rounded-xl bg-muted animate-pulse border border-border"
-          />
+          <ListRowSkeleton key={i} variant="date" />
         ))
       ) : filteredAppointments.length === 0 ? (
         <EmptyListState
@@ -118,6 +117,14 @@ export function AppointmentList({
             <ItemRow item={a} variant="date">
               <div className="flex items-center gap-2">
                 <AppointmentStatusBadge status={a.status} />
+                {a.hasRescheduledHistory && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EDE9FE] p-1 text-xs font-medium text-[#7C3AED]">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#7C3AED]">
+                      <RefreshCw className="text-white" size={10} />
+                    </span>
+                    <span className="pr-1">Rescheduled</span>
+                  </span>
+                )}
                 <button
                   type="button"
                   className="p-1 hover:bg-muted rounded-md transition-colors"

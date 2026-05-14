@@ -28,7 +28,7 @@ const AppointmentConfirmed = ({
         appointmentResponse.scheduled_start_at_utc,
         { weekday: "long", day: "numeric", month: "long", year: "numeric" },
         "en-US",
-        userTimezone
+        userTimezone,
       )
     : data.selectedDate
       ? `${data.selectedDate}`
@@ -40,7 +40,7 @@ const AppointmentConfirmed = ({
       ? formatZonedTimeRange(
           appointmentResponse.scheduled_start_at_utc,
           appointmentResponse.scheduled_end_at_utc,
-          { timeZone: userTimezone }
+          { timeZone: userTimezone },
         )
       : data.timeSlot || "10:00 PM - 12:00 PM";
 

@@ -160,6 +160,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    watch: {
+      usePolling: true,
+      interval: 300,
+    },
     allowedHosts: [
       "5173-nedu10-healthappfronten-rgt9n8z4y2b.ws-eu120.gitpod.io",
     ],

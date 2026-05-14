@@ -27,15 +27,15 @@ function MainPageHeader({
     path: -1,
   });
   return (
-    <div className={`p-2 flex justify-between ${className}`}>
+    <header className={`p-2 flex justify-between ${className}`}>
       {!backBtn ? (
         <>
           {" "}
           <span>
-            <h2 className=" text-2xl font-semibold">{heading}</h2>
+            <h2 className=" text-xl sm:text-2xl font-semibold">{heading}</h2>
             {userId ? userId : null}
             {subHeading && (
-              <p className=" text-wrap text-[#6C6C6C] text-[1rem]">
+              <p className=" text-wrap text-[#6C6C6C] sm:text-[1rem] text-sm">
                 {subHeading}
               </p>
             )}
@@ -55,7 +55,7 @@ function MainPageHeader({
           back
         </Button>
       )}
-    </div>
+    </header>
   );
 }
 

@@ -1,4 +1,10 @@
-import { CircleAlert, CircleCheck, CircleX, Hourglass } from "lucide-react";
+import {
+  CircleAlert,
+  CircleCheck,
+  CircleX,
+  Hourglass,
+  RefreshCw,
+} from "lucide-react";
 import { AppointmentStatus } from "../types/consultation.types";
 
 export function AppointmentStatusBadge({
@@ -70,11 +76,11 @@ export function AppointmentStatusBadge({
   }
   if (status === "RESCHEDULED") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#F98D11] bg-[#FFEEDA] p-1 rounded-full">
-        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#F98D11] text-white">
-          <Hourglass className=" text-white" size={10} />
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#7C3AED] bg-[#EDE9FE] p-1 rounded-full">
+        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#7C3AED]">
+          <RefreshCw className="text-white" size={10} />
         </span>
-        Recheduled
+        <span className="pr-1">Rescheduled</span>
       </span>
     );
   }

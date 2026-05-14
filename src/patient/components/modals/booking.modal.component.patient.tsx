@@ -66,6 +66,8 @@ const DEFAULT_VALUES: BookingFormData = {
   consultationType: "VIDEO",
   selectedDate: "",
   timeSlot: "",
+  originalSelectedDate: "",
+  originalTimeSlot: "",
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -138,6 +140,8 @@ const appointmentToFormData = (
     consultationType: data.consultation_id?.type || "VIDEO",
     selectedDate,
     timeSlot,
+    originalSelectedDate: selectedDate,
+    originalTimeSlot: timeSlot,
   };
 };
 
@@ -200,6 +204,18 @@ const buildPayload = (data: BookingFormData) => {
       | "MEETADOCTOR"
       | "HOMESERVICE",
   };
+};
+
+const getRejectedMessage = (error: RejectedPayload) =>
+  error.message || error.response_description || "";
+
+const shouldReturnToTimeSlotStep = (error: RejectedPayload) => {
+  const message = getRejectedMessage(error).toLowerCase();
+
+  return (
+    message.includes("cannot book a past timeslot") ||
+    message.includes("selected slot is already booked")
+  );
 };
 
 // ─── Response type from the API ─────────────────────────────────────────────
@@ -344,11 +360,10 @@ const Booking = () => {
     },
     onError: (error: RejectedPayload) => {
       toast.error(
-        error.message || "Failed to book appointment. Please try again.",
+        getRejectedMessage(error) ||
+          "Failed to book appointment. Please try again.",
       );
-      if (
-        error.message?.toLowerCase().includes("cannot book a past timeslot")
-      ) {
+      if (shouldReturnToTimeSlotStep(error)) {
         setCurrentStep(1);
         syncStep(1);
       }
@@ -375,13 +390,16 @@ const Booking = () => {
     },
     onError: (error: RejectedPayload) => {
       toast.error(
-        error.message || "Failed to reschedule appointment. Please try again.",
+        getRejectedMessage(error) ||
+          "Failed to reschedule appointment. Please try again.",
       );
-      if (
-        error.message?.toLowerCase().includes("cannot book a past timeslot")
-      ) {
+      if (shouldReturnToTimeSlotStep(error)) {
+        methods.setValue("timeSlot", "", { shouldValidate: true });
+        methods.setValue("suggestedTimeSlot", undefined);
+        methods.setValue("suggestedDate", undefined);
         setCurrentStep(1);
         syncStep(1);
+        return;
       }
       clearBookingQueryParams();
     },

@@ -11,6 +11,7 @@ import {
 import Spinner from "@/shared/components/spinner.component";
 import SideNav from "../sidenav.component.shared";
 import DashHeader from "../dash-header.component.shared";
+import MobileBottomNav from "../mobile-bottom-nav.component.shared";
 import { useQuery } from "@tanstack/react-query";
 import { refreshTokenReq } from "@/config/service/auth.service";
 import { useSelector } from "react-redux";
@@ -45,7 +46,6 @@ interface DashLayoutProps {
 function DashLayout({ sideNavOptions, redirectPath }: DashLayoutProps) {
   const { refreshToken, role } = useSelector((state: RootState) => state.auth);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const shouldRefresh = Boolean(refreshToken && role);
 
@@ -62,9 +62,6 @@ function DashLayout({ sideNavOptions, redirectPath }: DashLayoutProps) {
     refetchOnWindowFocus: false,
   });
 
-  // // Close mobile sidebar when navigation occurs
-  // const handleMobileSidebarClose = () => setIsMobileSidebarOpen(false);
-
   return (
     <div
       className={`h-svh max-w-[1920px] mx-auto bg-muted overflow-hidden flex flex-col md:grid ${isSidebarExpanded ? "md:grid-cols-[250px_1fr]" : "md:grid-cols-[80px_1fr]"} md:grid-rows-[auto_1fr] transition-[grid-template-columns] duration-300`}
@@ -78,43 +75,19 @@ function DashLayout({ sideNavOptions, redirectPath }: DashLayoutProps) {
         className="hidden md:flex border-r border-[#E5E5E5] row-span-full z-10 sticky top-0 h-svh"
       />
 
-      {/* Mobile Sidebar Overlay */}
-      {isMobileSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-20 md:hidden"
-          onClick={() => setIsMobileSidebarOpen(false)}
-          role="presentation"
-        />
-      )}
-
-      {/* Mobile Sidebar Drawer */}
-      <div
-        className={`fixed top-0 left-0 h-svh w-[250px] bg-white z-30 md:hidden transform transition-transform duration-300 overflow-y-auto ${
-          isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <SideNav
-          navOptions={sideNavOptions}
-          redirectPath={redirectPath}
-          isExpanded={true}
-          toggleSidebar={() => setIsMobileSidebarOpen(false)}
-          className="flex border-none"
-        />
-      </div>
-
       {/* Header always on top row */}
-      <DashHeader
-        headerChild={<HeaderContent />}
-        onMobileMenuClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-        isMobileSidebarOpen={isMobileSidebarOpen}
-      />
+      <DashHeader headerChild={<HeaderContent />} />
 
       {/* Main content */}
-      <div className="relative overflow-y-auto p-4 sm:p-6 md:p-8 lg:p-10">
+      <div className="relative overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-28 md:p-8 lg:p-10">
         <Suspense fallback={<LoadingFallback />}>
           <Outlet />
         </Suspense>
       </div>
+      <MobileBottomNav
+        navOptions={sideNavOptions}
+        redirectPath={redirectPath}
+      />
     </div>
   );
 }

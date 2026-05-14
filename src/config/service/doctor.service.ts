@@ -10,6 +10,70 @@ import {
 } from "@/lib/types";
 import { RawDoctorConsultationDetail } from "@/doctor/types/consultation.types";
 import { options, requestHandler, urlGenerator } from "./config";
+import { MetricTrend } from "./patient.service";
+
+type DoctorAppointmentStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "ACTIVE"
+  | "COMPLETED"
+  | "CANCELED"
+  | "NO_SHOW"
+  | "FAILED"
+  | "FORFEITED"
+  | "RESCHEDULED";
+
+type DoctorAppointmentProfileSnapshot = {
+  first_name: string;
+  last_name: string;
+  date_of_birth: string;
+  gender: string;
+  marital_status: string;
+  occupation: string;
+  present_complaint: string;
+};
+
+type DoctorAppointmentPatient = {
+  _id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  full_name: string;
+  gender: string;
+  marital_status: string;
+  occupation: string;
+  profile_picture_url?: string;
+};
+
+type DoctorAppointmentDoctor = {
+  _id: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  email: string;
+  specializations: string[];
+  profile_picture_url?: string;
+};
+
+type DoctorAppointmentRescheduledHistoryItem = {
+  _id: string;
+  appointment_number: string;
+  patient_id: DoctorAppointmentPatient;
+  doctor_id: DoctorAppointmentDoctor;
+  scheduled_start_at_utc: string;
+  scheduled_end_at_utc: string;
+  timezone_snapshot: string;
+  status: DoctorAppointmentStatus;
+  reason_for_visit: string;
+  Medical_conditions?: unknown[];
+  allergies?: unknown[];
+  booking_profile_snapshot: DoctorAppointmentProfileSnapshot;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  cancelled_by?: string;
+  cancelled_reason?: string;
+};
 
 // Login Doctor with creds
 export const loginDoctor = (data: { email: string; password: string }) => {
@@ -301,16 +365,7 @@ export const getDoctorAppointmentsReq = (param: {
         scheduled_start_at_utc: string;
         scheduled_end_at_utc: string;
         timezone_snapshot: string;
-        status:
-          | "PENDING"
-          | "CONFIRMED"
-          | "ACTIVE"
-          | "COMPLETED"
-          | "CANCELED"
-          | "NO_SHOW"
-          | "FAILED"
-          | "FORFEITED"
-          | "RESCHEDULED";
+        status: DoctorAppointmentStatus;
         reason_for_visit: string;
         booking_profile_snapshot?: {
           first_name: string;
@@ -323,6 +378,7 @@ export const getDoctorAppointmentsReq = (param: {
         };
         consultation_id?: string;
         rescheduled_from_appointment_id?: string;
+        rescheduled_history?: DoctorAppointmentRescheduledHistoryItem[];
       }[];
       pagination: {
         page: number;
@@ -360,16 +416,7 @@ export const getSingleDoctorAppointmentReq = (appointmentId: string) => {
       scheduled_start_at_utc: string;
       scheduled_end_at_utc: string;
       timezone_snapshot: string;
-      status:
-        | "PENDING"
-        | "CONFIRMED"
-        | "ACTIVE"
-        | "COMPLETED"
-        | "CANCELED"
-        | "NO_SHOW"
-        | "FAILED"
-        | "FORFEITED"
-        | "RESCHEDULED";
+      status: DoctorAppointmentStatus;
       reason_for_visit: string;
       Medical_conditions?: unknown[];
       allergies?: unknown[];
@@ -389,18 +436,16 @@ export const getSingleDoctorAppointmentReq = (appointmentId: string) => {
         consultation_id: string;
         title: string;
         details: string;
-        status:
-          | "PENDING"
-          | "CONFIRMED"
-          | "ACTIVE"
-          | "COMPLETED"
-          | "CANCELED"
-          | "NO_SHOW"
-          | "FAILED"
-          | "FORFEITED"
-          | "RESCHEDULED";
+        status: DoctorAppointmentStatus;
       };
       rescheduled_from_appointment_id?: string;
+      createdAt: string;
+      updatedAt: string;
+      __v: number;
+      daily_room_expires_at?: string;
+      daily_room_name?: string;
+      daily_room_url?: string;
+      rescheduled_history: DoctorAppointmentRescheduledHistoryItem[];
     }>
   >(url, options("GET", null, true));
 };
@@ -444,16 +489,8 @@ export const getAllDoctorAppointmentsReq = () => {
           consultation_id: string;
           title: string;
           details: string;
-          status:
-            | "PENDING"
-            | "CONFIRMED"
-            | "ACTIVE"
-            | "COMPLETED"
-            | "CANCELED"
-            | "NO_SHOW"
-            | "FAILED"
-            | "FORFEITED"
-            | "RESCHEDULED";
+          status: DoctorAppointmentStatus;
+          rescheduled_history: DoctorAppointmentRescheduledHistoryItem[];
         };
       }>
     >
@@ -1936,4 +1973,17 @@ export const deleteReferralRecordReq = (referral_id: string) => {
     url,
     options("DELETE", {}, true),
   );
+};
+
+export const getDoctorDashMetrics = () => {
+  const url = urlGenerator("doctors", "me/metrics", false);
+
+  return requestHandler<
+    GeneralReturnInt<{
+      consultations: MetricTrend;
+      medications: MetricTrend;
+      investigations: MetricTrend;
+      appointments: MetricTrend;
+    }>
+  >(url, options("GET", undefined, true));
 };
