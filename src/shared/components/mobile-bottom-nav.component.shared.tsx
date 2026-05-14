@@ -32,7 +32,7 @@ function MobileBottomNav({
       aria-label="Primary navigation"
     >
       <div className="mx-auto flex max-w-[520px] items-stretch gap-1 overflow-x-auto overscroll-x-contain">
-        {mobileNavOptions.map(({ Icon, title, url, iconProps }) => (
+        {mobileNavOptions.map(({ Icon, title, url }) => (
           <NavLink
             key={`${title}-${url}`}
             to={url}
@@ -53,7 +53,6 @@ function MobileBottomNav({
                   className={`shrink-0 transition-transform duration-200 ${
                     isActive ? "scale-105" : "group-active:scale-95"
                   }`}
-                  {...iconProps}
                 />
                 <span className="max-w-full truncate">{title}</span>
               </>
